@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>NeuroVigil Upload Portal</title>
+
+    <!-- Some CSS for the jQuery uploader UI -->
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/base/jquery-ui.css"
+          id="theme">
+    <link href="/static/admin/css/jquery.fileupload-ui.css" rel="stylesheet">
+
+    <!-- jQuery Javascript -->
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.14/jquery-ui.min.js"></script>
+    <!-- jQuery Templates -->
+    <script src="http://ajax.aspnetcdn.com/ajax/jquery.templates/beta1/jquery.tmpl.min.js"></script>
+
+    <!-- Fixing CSRF in Django for jQuery -->
+    <script src="/static/admin/js/jquery_fix_csrf.js"></script>
+
+    <!-- jQuery Upload files -->
+    <script src="/static/admin/js/jquery.iframe-transport.js"></script>
+    <script src="/static/admin/js/jquery.fileupload.js"></script>
+    <script src="/static/admin/js/jquery.fileupload-ui.js"></script>
+
+<link rel="stylesheet" type='text/css' href="/static/admin/css/base.css">
+    <script type="text/javascript">
+        $(function() {
+            'use strict';
+
+            // Initialize the jQuery File Upload widget
+            // For a complete option reference go to
+            // https://github.com/blueimp/jQuery-File-Upload
+            $('#fileupload').fileupload({
+                // this formData is neccessary to pass the csrf and pass uid to django
+                formData: [
+                    { name: "uid", value: "{{ uid }}"},
+                    { name: "csrfmiddlewaretoken", value: "{{ csrf_token }}"},
+					{ name: "groupID", value: groupID},
+                ],
+                maxFileSize: {{ maxfilesize }},
+                minFileSize: {{ minfilesize }},
+                sequentialUploads: true,
+				autoUpload: true,
+				
+            });
+
+            // Load existing files
+            $.getJSON($('#fileupload form').prop('action'), function (files) {
+                var fu = $('#fileupload').data('fileupload');
+                fu._adjustMaxNumberOfFiles(-files.length);
+                fu._renderDownload(files)
+                        .appendTo($('#fileupload .files'))
+                        .fadeIn(function () {
+                            // Fix for IE7 and lower:
+                            $(this).show();
+                        });
+            });
+
+            // Open download dialogs via iframes,
+            // to prevent aborting current uploads
+            $('#fileupload .files a:not([target^=_blank])').live('click', function (e) {
+                e.preventDefault();
+                $('<iframe style="display:none;"></iframe>')
+                        .prop('src', this.href)
+                        .appendTo('body');
+            });
+
+        });
+    </script>
+
+
+
+
+
+
+
+	<script type="text/javascript">
+		function guidGenerator() {
+		    var S4 = function() {
+		       return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+		    };
+		    return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+		}
+	var groupID = guidGenerator();
+	</script>
+	<!-- the group id is to keep uploads together in django if they're submitted togehter-->
+	
+
+</head>
+
+<body style="padding:30px; background-color:black; width:700px">
+    
+	<div id="fileupload">
+        <img src="/static/admin/img/nv-logo.jpg" width="700" alt="NeuroVigil Logo">
+	    <form action="{% url upload.views.Upload %}" method="POST" enctype="multipart/form-data">
+	        {% csrf_token %}
+			<!--
+	        <div class="fileupload-buttonbar">
+	            <label class="fileinput-button">
+	                <span>Add files...</span>
+	                <input type="file" name="files[]" multiple>
+	            </label>
+				<input type='text' name="name">
+	            <button type="submit" class="start">Start upload</button>
+				-->
+	            <!--<button type="reset" class="cancel">Cancel upload</button>
+	            <button type="button" class="delete">Delete files</button>
+				
+				
+	        </div>-->
+
+	    </form>
+	    <div class="fileupload-content">
+	        <table class="files"></table>
+	        <div class="fileupload-progressbar"></div>
+	    </div>
+        <h2>Drag and drop your files on this page to upload them to NeuroVigil.</h2>
+<script id="template-upload" type="text/x-jquery-tmpl">
+    <tr class="template-upload{{ open_tv }}if error{{ close_tv }} ui-state-error{{ open_tv }}/if{{ close_tv }}">
+        <td class="preview"></td>
+        <td class="name">${name}</td>
+        <td class="size">${sizef}</td>
+        {{ open_tv }}if error{{ close_tv }}
+        <td class="error" colspan="2">Error:
+            {{ open_tv }}if error === 'maxFileSize'{{ close_tv }}File is too big
+            {{ open_tv }}else error === 'minFileSize'{{ close_tv }}File is too small
+            {{ open_tv }}else error === 'acceptFileTypes'{{ close_tv }}Filetype not allowed
+            {{ open_tv }}else error === 'maxNumberOfFiles'{{ close_tv }}Max number of files exceeded
+            {{ open_tv }}else{{ close_tv }}${error}
+            {{ open_tv }}/if{{ close_tv }}
+        </td>
+        {{ open_tv }}else{{ close_tv }}
+        <td class="progress">
+            <div></div>
+        </td>
+        <td class="start">
+            <button>Start</button>
+        </td>
+        {{ open_tv }}/if{{ close_tv }}
+        <td class="cancel">
+            <button>Cancel</button>
+        </td>
+    </tr>
+</script>
+<script id="template-download" type="text/x-jquery-tmpl">
+    <tr class="template-download{{ open_tv }}if error{{ close_tv }} ui-state-error{{ open_tv }}/if{{ close_tv }}">
+        {{ open_tv }}if error{{ close_tv }}
+        <td></td>
+        <td class="name">${name}</td>
+        <td class="size">${sizef}</td>
+        <td class="error" colspan="2">Error:
+            {{ open_tv }}if error === 1{{ close_tv }}File exceeds upload_max_filesize (php.ini directive)
+            {{ open_tv }}else error === 2{{ close_tv }}File exceeds MAX_FILE_SIZE (HTML form directive)
+            {{ open_tv }}else error === 3{{ close_tv }}File was only partially uploaded
+            {{ open_tv }}else error === 4{{ close_tv }}No File was uploaded
+            {{ open_tv }}else error === 5{{ close_tv }}Missing a temporary folder
+            {{ open_tv }}else error === 6{{ close_tv }}Failed to write file to disk
+            {{ open_tv }}else error === 7{{ close_tv }}File upload stopped by extension
+            {{ open_tv }}else error === 'maxFileSize'{{ close_tv }}File is too big
+            {{ open_tv }}else error === 'minFileSize'{{ close_tv }}File is too small
+            {{ open_tv }}else error === 'acceptFileTypes'{{ close_tv }}Filetype not allowed
+            {{ open_tv }}else error === 'maxNumberOfFiles'{{ close_tv }}Max number of files exceeded
+            {{ open_tv }}else error === 'uploadedBytes'{{ close_tv }}Uploaded bytes exceed file size
+            {{ open_tv }}else error === 'emptyResult'{{ close_tv }}Empty file upload result
+            {{ open_tv }}else{{ close_tv }}${error}
+            {{ open_tv }}/if{{ close_tv }}
+        </td>
+        {{ open_tv }}else{{ close_tv }}
+        <td class="preview">
+            {{ open_tv }}if thumbnail_url{{ close_tv }}
+            <a href="${url}" target="_blank"><img src="${thumbnail_url}"></a>
+            {{ open_tv }}/if{{ close_tv }}
+        </td>
+        <td class="name">
+            <a href="${url}" {{ open_tv }}if thumbnail_url{{ close_tv }}
+               target="_blank"{{ open_tv }}/if{{ close_tv }}>${name}</a>
+        </td>
+        <td class="size">${sizef}</td>
+        <td colspan="2"></td>
+        {{ open_tv }}/if{{ close_tv }}
+        <td class="delete">
+            <button data-type="${delete_type}" data-url="${delete_url}">Delete</button>
+        </td>
+    </tr>
+</script>
+
+
+</body>
+
+
+</html>

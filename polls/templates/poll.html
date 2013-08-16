@@ -1,0 +1,84 @@
+
+
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<link rel="stylesheet" type="text/css" href="/static/admin/css/base.css">
+	<link rel="stylesheet" type="text/css" href="/static/admin/css/baseOverride.css" />
+	
+    {% include 'menu-head-snippet.html' %}
+	
+	<!-- includes for the sortable stuff -->
+	{% include 'sortable-snippet.html' %}
+
+
+</head>
+<body>
+{{menutext.html|safe}}
+
+
+<!--Make the list with the id = 'sortable' sortable-->
+<script>
+$(function() {
+	$( "#sortable" ).sortable({
+		update: function(event, ui)
+		{
+			var result = new Array()
+			var blah = $('ul#sortable li').each(function(index) {
+			    result[index] = $(this).attr('rank') ;
+			});
+			console.log(result)
+			sucesscall = function(data, textStatus, jqXHR){
+				console.log(data);
+				if (data.status == false){
+					alert('Server Error. Your changes may be lost.\n\n'+data.textStatus);
+					window.location.href = "{% url polls.views.poll %}"; 
+				} else {
+					var count = 0;
+					var ick = $('ul#sortable li').each(function(index) {
+						$(this).attr('rank', count);
+						count += 1;
+						});
+					/* Actually, see the necoautomate version of this 
+					in the reorder authors page for a better example. */
+				}
+			}
+			
+			errorcall = function(jqXHR, textStatus, errorThrown){
+				alert("Request Failed");
+				window.location.reload(true);
+			}
+			 
+			$.ajax({
+				type:'POST',
+				url: '{% url polls.views.poll %}',
+				data: {rank:result},
+				success: sucesscall,
+				error: errorcall,
+			})
+			
+		}
+	});
+	$( "#sortable" ).disableSelection();
+});
+</script>
+
+
+
+
+<br><br><br><br><br><br><br><br>
+<div class="demo" >
+<ul id="sortable">
+	{% for item in data %}
+	<li class="ui-state-default" rank="{{ item.rank }}"><span class="ui-icon ui-icon-arrowthick-2-n-s"></span>{{ item.item1 }}</li>
+	{% endfor %}
+</ul>
+</div><!-- End demo -->
+
+
+{% include 'menu-body-snippet.html' %}
+<link rel="stylesheet" href="/static/admin/jquery-ui/css/custom-theme/jquery-ui-1.8.22.custom.css" type="text/css">
+
+</body>
+</html>

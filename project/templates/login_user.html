@@ -1,0 +1,75 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>NeuroVigl Log in</title>
+<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+<link rel='stylesheet' type='text/css' href="/static/admin/css/base.css" />
+<link rel="stylesheet" href="/static/admin/css/login.css" type="text/css">
+
+<meta name="robots" content="NONE,NOARCHIVE" />
+
+</head>
+
+
+<body class="login" style="background-color=gray">
+
+<!-- Container -->
+<div id="container">
+
+    
+    <!-- Header -->
+    <div id="header">
+        <div id="branding">
+        
+<h1 id="site-name">NeuroVigl Login</h1>
+
+        </div>
+        
+        
+    </div>
+    <!-- END Header -->
+    
+    
+
+        
+
+    <!-- Content -->
+    <div id="content" class="colM">
+        
+        
+        
+
+<div id="content-main">
+<form action="/login_user/" method="post" id="login-form"><div style='display:none'>{% csrf_token %}
+</div>
+  <div class="form-row">
+    <label for="id_username">Username:</label> <input type="text" name="username" id="id_username" />
+  </div>
+  <div class="form-row">
+    <label for="id_password">Password:</label> <input type="password" name="password" id="id_password" />
+    <input type="hidden" name="this_is_the_login_form" value="1" />
+  </div>
+  <div class="submit-row">
+    <label>&nbsp;</label><input type="submit" value="Log In" />
+  </div>
+	<input type='hidden' name='nextp' value="{{nextp}}" />
+</form>
+
+<script type="text/javascript">
+document.getElementById('id_username').focus()
+</script>
+</div>
+
+        
+        <br class="clear" />
+    </div>
+    <!-- END Content -->
+
+    <div id="footer"></div>
+</div>
+<!-- END Container -->
+
+</body>
+
+</html>
