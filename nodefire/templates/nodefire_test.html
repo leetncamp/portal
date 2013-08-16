@@ -1,0 +1,42 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>vfntest</title>
+	<meta name="generator" content="TextMate http://macromates.com/">
+	<meta name="author" content="leetncamp">
+	<!-- Date: 2012-08-01 -->
+	<!--[START-LC]--><link rel='stylesheet' type='text/css' href='/static/admin/css/nodefire_styles.css'/><!--[END-LC]-->
+	
+	{% include 'jquery-latest-snippet.html' %}
+	{% include 'jquery-ui-custom-snippet.html' %}
+	
+	<link rel="stylesheet" href="/static/admin/jquery-ui/css/custom-theme/jquery-ui-1.8.22.custom.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	
+	<!--[START-LJ]--><script type='text/javascript' src='/static/admin/js/nodefire.js'></script><!--[END-LJ]-->	
+</head>	
+<body>
+
+{{menu.html|safe}}
+	
+<!-- Add javascript's minimal contribution -->
+	<!-- Create Menu Settings: (Int Menu ID, Object Literal Settings - {showDelay:int, hideDelay:int, interaction:string}) [interaction options... 'hover', 'all-always-open', 'click-all', 'all', 'all-always-open', 'main')] -->
+	<script type="text/javascript">qm_create(0,{showDelay:200,hideDelay:200,interaction:'hover',autoResize:false});</script><!--[END-QM0]-->
+
+<form action="/nodefire/" method="post">{% csrf_token %}
+<input id="blah" type='text'>
+<input type='submit'>	
+</form>	
+
+<script type="text/javascript">
+    $(function() {
+        var availableTags = ['one','two','three'];
+        $( "input[id$='blah']" ).autocomplete({
+            source: availableTags
+        });
+    });
+ </script>
+</body>
+</html>
