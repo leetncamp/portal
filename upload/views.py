@@ -21,7 +21,7 @@ import uuid
 from django.contrib.auth.decorators import login_required
 
 import subprocess
-
+from snlmailer import Message
 
 import string
 import re
@@ -77,9 +77,9 @@ def Upload(request):
     #   and check validity late in the code
     options = {
         # the maximum file size (must be in bytes)
-        "maxfilesize": 15000000000, # 2 Mb
+        "maxfilesize": 4000000000, # 4 Gb
         # the minimum file size (must be in bytes)
-        "minfilesize": 0 * 2 ** 10, # 1 Kb
+        "minfilesize": 0 * 2 ** 10, # 0 Kb
         # the file types which are going to be allowed for upload
         #   must be a mimetype
         "acceptedformats": (
@@ -101,6 +101,10 @@ def Upload(request):
             "video/mp4",
             "video/mpeg",
             "application/x-tar",
+            "application/octet-stream", #This allows any binary file to be uploaded.  Be careful.
+            "application/msword",
+            "application/vnd.ms-excel",
+            "application/vnd.ms-powerpoint",            
             )
     }
 
@@ -109,16 +113,17 @@ def Upload(request):
     #   meaning user has triggered an upload action
 
     if request.method == 'POST':
+
         # figure out the path where files will be uploaded to
         # PROJECT_DIR is from the settings file
         temp_path = os.path.join(settings.PROJECT_DIR, "tmp", request.session._get_or_create_session_key())
-
         # if 'f' query parameter is not specified
         # file is being uploaded
         if not ("f" in request.GET.keys()): # upload file
 
             # make sure some files have been uploaded
             if not request.FILES:
+                print("User tried to upload something that wasn't a file.")
                 return HttpResponseBadRequest('Must upload a file')
 
             
@@ -128,27 +133,27 @@ def Upload(request):
             #temp_path = os.path.join(temp_path, uid)
 
             # get the uploaded file
-            file = request.FILES[u'files[]']
+            ufile = request.FILES[u'files[]']
             
             error = False
 
             # check against options for errors
 
             # file size
-            if file.size > options["maxfilesize"]:
+            if ufile.size > options["maxfilesize"]:
                 error = "maxFileSize"
-            if file.size < options["minfilesize"]:
+            if ufile.size < options["minfilesize"]:
                 error = "minFileSize"
                 # allowed file type
-            if file.content_type not in options["acceptedformats"]:
+            if ufile.content_type not in options["acceptedformats"]:
                 error = "acceptFileTypes"
 
 
             # the response data which will be returned to the uploader as json
             response_data = {
-                "name": file.name,
-                "size": file.size,
-                "type": file.content_type
+                "name": ufile.name,
+                "size": ufile.size,
+                "type": ufile.content_type
             }
 
             # if there was an error, add error message to response_data and return
@@ -165,8 +170,7 @@ def Upload(request):
             if not os.path.exists(temp_path):
                 os.makedirs(temp_path)            
             
-
-            safename = safe_filename(file.name)
+            safename = safe_filename(ufile.name)
             filename = os.path.join(temp_path, safename)
 
             #Before writing the files out, create the group folder based on the date of the group.
@@ -179,25 +183,27 @@ def Upload(request):
             # save file data into the disk
             # use the chunk method in case the file is too big
             # in order not to clutter the system memory
-            for chunk in file.chunks():
+            for chunk in ufile.chunks():
                 destination.write(chunk)
                 # close the file
             destination.close()
-
-            gigsFree = subprocess.Popen(['df',"-h" , "."], stdout=subprocess.PIPE).communicate()[0]
+            
+            file(os.path.join(temp_path, "username.txt"), "w").write(request.user.username)
+            gigsFree = subprocess.Popen(['df',"-gh" , "."], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
             tmpdir = os.path.join(settings.PROJECT_DIR, "tmp")
-            filelisting = subprocess.Popen(["find", tmpdir, "-type", "f"], stdout=subprocess.PIPE).communicate()[0]
-            #msg = Message(To='lee@salk.edu', From='lee@salk.edu', Subject='Someone Uploaded Files')
-            #msg.Body = "Gigabytes free : {0}\nFile Listing :{1}".format(gigsFree, filelisting)
-            #msg.makeFixedWidth()
-            #msg.gmailSend()
-            
-            
-            
-            
+            filelisting = subprocess.Popen(["find", tmpdir, "-type", "f"], stdout=subprocess.PIPE).communicate()[0].split("\n")
+            for banned in ['.DS_Store', "username.txt"]:
+                filelisting = [fl for fl in filelisting if not banned in fl]
+            commands = ''
+            filelisting = "\n".join(filelisting)
+            To = open('email.txt').read().replace(",","").split()
+            msg = Message(To=To, From='lee@salk.edu', Subject='{0} Uploaded Files'.format(request.user.username))
+            msg.Body = "\nGigabytes free: {0}\n\nFile Listing: {1}".format(gigsFree, filelisting)
+            msg.gmailSend()
+ 
             # url for deleting the file in case user decides to delete it
             response_data["delete_url"] = request.path + "?" + urllib.urlencode(
-                    {"f": os.path.join(temp_path.split(settings.PROJECT_DIR+"/")[1], file.name)})
+                    {"f": os.path.join(temp_path.split(settings.PROJECT_DIR+"/")[1], ufile.name)})
 
             # specify the delete type - must be POST for csrf
             response_data["delete_type"] = "POST"
