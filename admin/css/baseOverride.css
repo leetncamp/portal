@@ -1,0 +1,53 @@
+
+/*
+    NecoAutomate needs to override one of the table styles
+    to prevent a bottom 1px border-bottom.  
+    While this border is necessary for the admin interface,
+    it makes things look messy in the automate pages.
+*/
+
+
+td, th, h4 {
+    font-size: 14px;
+    line-height: 16px;
+    border-bottom: 0px solid #eee;
+    vertical-align: center;
+    padding: 5px;
+    font-family: "Lucida Grande", Verdana, Arial, sans-serif;
+}
+
+
+p {
+    font-size:13;
+    /*margin-top:20px;
+    margin-bottom:20px;
+    margin-right:20px;
+    margin-left:20px;
+    */
+}
+
+
+
+li {
+    font-size: 13px;
+    line-height: 15px;
+}
+
+
+select { /* Text and background colour, blue on light gray */
+
+background-color:#EDF3FE;
+}
+
+/*
+::selection {
+	background: #ffb7b7; /* Safari */
+	}
+::-moz-selection {
+	background: #ffb7b7; /* Firefox */
+}
+
+select option:hover {
+    background-color: blue;
+}
+/*
