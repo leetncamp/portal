@@ -37,7 +37,7 @@ def safe_filename(filename):
     return (''.join(c for c in filename if c in valid_chars) )
 
 
-@login_required(login_url='/login_user')
+#@login_required(login_url='/login_user')
 def Upload(request):
     """
     
@@ -116,7 +116,7 @@ def Upload(request):
 
         # figure out the path where files will be uploaded to
         # PROJECT_DIR is from the settings file
-        temp_path = os.path.join(settings.PROJECT_DIR, "tmp", request.session._get_or_create_session_key())
+        temp_path = os.path.join(settings.PROJECT_DIR, "uploads", request.session._get_or_create_session_key())
         # if 'f' query parameter is not specified
         # file is being uploaded
         if not ("f" in request.GET.keys()): # upload file
@@ -190,7 +190,7 @@ def Upload(request):
             
             file(os.path.join(temp_path, "username.txt"), "w").write(request.user.username)
             gigsFree = subprocess.Popen(['df',"-gh" , "."], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
-            tmpdir = os.path.join(settings.PROJECT_DIR, "tmp")
+            tmpdir = os.path.join(settings.PROJECT_DIR, "uploads")
             filelisting = subprocess.Popen(["find", tmpdir, "-type", "f"], stdout=subprocess.PIPE).communicate()[0].split("\n")
             for banned in ['.DS_Store', "username.txt"]:
                 filelisting = [fl for fl in filelisting if not banned in fl]
