@@ -203,7 +203,6 @@ def Upload(request):
             
             msg = Message(To=To, From='lee@salk.edu', Subject='{0} Uploaded Files'.format(request.user.username))
             msg.Body = "\nGigabytes free: {0}\n\nFile Listing: {1}".format(gigsFree, filelisting)
-            debug()
             for recipient in To:
                 msg.To = recipient
                 #msg.gmailSend()
