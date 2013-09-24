@@ -10,7 +10,7 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 #SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 
-DB_NAME = "upload.neurovigil.db"
+DB_NAME = "/var/lib/sqlite3/portalDB/upload.neurovigil.db"
 
 ADMINS = (
     ('Lee Campbell', 'lee@snl.salk.edu'),
@@ -148,7 +148,6 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
     'upload',
-    'nodefire',
 )
 
 # A sample logging configuration. The only tangible logging
