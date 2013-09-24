@@ -179,7 +179,8 @@ def Upload(request):
                     print(e)
             safename = safe_filename(ufile.name)
             filename = os.path.join(temp_path, safename)
-
+            print("ID information")
+            print os.popen('id').read()
             #Before writing the files out, create the group folder based on the date of the group.
             print("Create Group Folder")
 
@@ -239,8 +240,7 @@ def Upload(request):
                     #msg.gmailSend()
             except Exception as e:
                 print(e)
-            print("ID information")
-            print os.popen('id').read()
+            
             print("Getting delete handle")
             # url for deleting the file in case user decides to delete it
             response_data["delete_url"] = request.path + "?" + urllib.urlencode(
