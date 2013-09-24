@@ -39,7 +39,7 @@ def safe_filename(filename):
 
 #@login_required(login_url='/login_user')
 def Upload(request):
-
+    print("Starting upload")
     """
     
     ## View for file uploads ##
