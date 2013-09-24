@@ -217,11 +217,16 @@ def Upload(request):
             tmpdir = os.path.join(settings.PROJECT_DIR, "uploads")
             print("Getting file listing")
             filelisting = subprocess.Popen(["find", tmpdir, "-type", "f"], stdout=subprocess.PIPE).communicate()[0].split("\n")
+            print("Removing banned files")
             for banned in ['.DS_Store', "username.txt"]:
                 filelisting = [fl for fl in filelisting if not banned in fl]
             commands = ''
             filelisting = "\n".join(filelisting)
-            To = open('email.txt').read().replace(",","")
+            try:
+                To = open('email.txt').read().replace(",","")
+            except Exception as e:
+                print(e)
+            print("Sending Email")
             To = [line for line in To.split("\n") if not line.startswith("#")]
             To = [line for line in To if line]
             msg = Message(To=To, From='lee@salk.edu', Subject='{0} Uploaded Files'.format(request.user.username))
