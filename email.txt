@@ -1,1 +1,4 @@
-lee@salk.edu, arlene@neurovigil.com
+#Comma separated list of names to send an email to when a file is uploaded, e.g.
+#philip@neurovigil, dan@neurovigil.com
+
+lee@snl.salk.edu
