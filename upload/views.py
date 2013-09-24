@@ -114,7 +114,7 @@ def Upload(request):
     #   meaning user has triggered an upload action
 
     if request.method == 'POST':
-
+        print("Starting POST")
         # figure out the path where files will be uploaded to
         # PROJECT_DIR is from the settings file
         temp_path = os.path.join(settings.PROJECT_DIR, "uploads", request.session._get_or_create_session_key())
@@ -149,7 +149,7 @@ def Upload(request):
             if ufile.content_type not in options["acceptedformats"]:
                 error = "acceptFileTypes"
 
-
+            print("Response data")
             # the response data which will be returned to the uploader as json
             response_data = {
                 "name": ufile.name,
