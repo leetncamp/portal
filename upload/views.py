@@ -204,9 +204,10 @@ def Upload(request):
             
             msg = Message(To=To, From='lee@salk.edu', Subject='{0} Uploaded Files'.format(request.user.username))
             msg.Body = "\nGigabytes free: {0}\n\nFile Listing: {1}".format(gigsFree, filelisting)
+            debug()
             for recipient in To:
                 msg.To = recipient
-                msg.gmailSend()
+                #msg.gmailSend()
  
             # url for deleting the file in case user decides to delete it
             response_data["delete_url"] = request.path + "?" + urllib.urlencode(

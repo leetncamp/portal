@@ -470,6 +470,7 @@ def gmailSend(message):
         except:
             pass
     ubc = base64.decodestring('ckVTcDZmUmUzQQ==\n')
+    debug()
     sender=Mailer('smtp.gmail.com')
     sender.starttls()
     sender.login('snlsmtp@gmail.com',ubc)
