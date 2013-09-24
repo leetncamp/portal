@@ -177,7 +177,7 @@ def Upload(request):
                     print(e)
             safename = safe_filename(ufile.name)
             filename = os.path.join(temp_path, safename)
-            debug()
+
             #Before writing the files out, create the group folder based on the date of the group.
             print("Create Group Folder")
 
