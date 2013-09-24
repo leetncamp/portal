@@ -23,6 +23,8 @@ from django.contrib.auth.decorators import login_required
 import subprocess
 from snlmailer import Message
 
+import time
+
 import string
 import re
 escapeRE = re.compile("^\.\./|^\/|^\.\/")
@@ -41,7 +43,8 @@ def safe_filename(filename):
 
 def freespace(request):
     tmpFree = subprocess.Popen(['df',"-h" , "/tmp"], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
-    response_data = simplejson.dumps({"tmpFree":tmpFree})
+    #response_data = simplejson.dumps({"tmpFree":tmpFree})
+    response_data = simplejson.dumps({"tmpFree":time.time()})
     print response_data
 
     return HttpResponse(response_data, mimetype='application/json')
