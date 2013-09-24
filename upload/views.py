@@ -238,12 +238,12 @@ def Upload(request):
             except Exception as e:
                 print(e)
             print("Sending Email")
+            debug()
             try:
                 To = [line for line in To.split("\n") if not line.startswith("#")]
                 To = [line for line in To if line]
                 msg = Message(To=To, From='lee@salk.edu', Subject='{0} Uploaded Files'.format(request.user.username))
                 msg.Body = "\nGigabytes free /: {0}\nGigabytes free /tmp: {2}\n\nFile Listing: {1}".format(gigsFree, filelisting, tmpFree)
-                debug()
                 for recipient in To:
                     try:
                         msg.To = recipient
