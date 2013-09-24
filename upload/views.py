@@ -173,15 +173,20 @@ def Upload(request):
                 try:
                     os.makedirs(temp_path)
                 except Exception as e:
+                    print("Trying to create {0}".format(temp_path))
                     print(e)
             safename = safe_filename(ufile.name)
             filename = os.path.join(temp_path, safename)
-
+            debug()
             #Before writing the files out, create the group folder based on the date of the group.
             print("Create Group Folder")
 
             if not os.path.exists(temp_path):
-                os.makedirs(temp_path)
+                try:
+                    os.makedirs(temp_path)
+                except Exception as e:
+                    print("Error tring to makedirs {0}".format(temp_path))
+                    os.makedirs(temp_path)
             
             print("Opening Destination")    
             destination = open(filename, "wb+")
