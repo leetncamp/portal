@@ -75,17 +75,38 @@
 
 
 
-	<script type="text/javascript">
-		function guidGenerator() {
-		    var S4 = function() {
-		       return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-		    };
-		    return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
-		}
-	var groupID = guidGenerator();
-	</script>
-	<!-- the group id is to keep uploads together in django if they're submitted togehter-->
-	
+<script type="text/javascript">
+	function guidGenerator() {
+	    var S4 = function() {
+	       return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+	    };
+	    return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+	}
+var groupID = guidGenerator();
+</script>
+<!-- the group id is to keep uploads together in django if they're submitted togehter-->
+
+<script type="text/javascript">
+function getFreeSpace() {
+	$.ajax({
+		type:"POST",
+		url: "/freespace",
+		dataType: "json",
+		data: {},
+		success: function( data ){
+            console.log(data['tmpFree']);
+			$("#FreeSpace").html(data['tmpFree']);
+		},
+		error:function (xhr, ajaxOptions, thrownError){
+		                    alert(xhr.status);
+		                    alert(thrownError);
+        }
+	})
+
+}
+var UpdateFreeSpace = window.setInterval(getFreeSpace, 4000)
+</script>
+
 
 </head>
 
@@ -116,7 +137,7 @@
 	        <div class="fileupload-progressbar"></div>
 	    </div>
         <h2>Drag and drop your files on this page to upload them to NeuroVigil.</h2>
-        <h2>Free Space {{ tmpFree }}</h2>
+        <h2>Free Space <span id="FreeSpace">{{ tmpFree }}<span></h2>
 <script id="template-upload" type="text/x-jquery-tmpl">
     <tr class="template-upload{{ open_tv }}if error{{ close_tv }} ui-state-error{{ open_tv }}/if{{ close_tv }}">
         <td class="preview"></td>

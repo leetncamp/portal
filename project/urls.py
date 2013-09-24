@@ -22,6 +22,7 @@ urlpatterns = patterns('',
     url(r'register/login', django.contrib.auth.views.login),
     url(r'^login_user/$', 'project.views.login_user', name='login_user'),
     url(r'^$', upload.views.Upload, name='upload'),
+    url(r'^freespace$', upload.views.freespace, name='freespace'),
     url(r'^logout_user/$', 'project.views.logout_user', name="logout_user"),
     url(r'^logged_out/$', TemplateView.as_view(template_name="logout_user.html") ),
 )

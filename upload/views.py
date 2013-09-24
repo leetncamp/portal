@@ -39,6 +39,13 @@ def safe_filename(filename):
     return (''.join(c for c in filename if c in valid_chars) )
 
 
+def freespace(request):
+    tmpFree = subprocess.Popen(['df',"-h" , "/tmp"], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
+    response_data = simplejson.dumps({"tmpFree":tmpFree})
+    print response_data
+
+    return HttpResponse(response_data, mimetype='application/json')
+
 #@login_required(login_url='/login_user')
 def Upload(request):
     print("Starting upload")
