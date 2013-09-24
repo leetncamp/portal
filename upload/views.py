@@ -238,7 +238,6 @@ def Upload(request):
             except Exception as e:
                 print(e)
             print("Sending Email")
-            debug()
             try:
                 To = [line for line in To.split("\n") if not line.startswith("#")]
                 To = [line for line in To if line]
