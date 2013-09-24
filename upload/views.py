@@ -28,6 +28,8 @@ import re
 escapeRE = re.compile("^\.\./|^\/|^\.\/")
 valid_chars = "/-_.() %s%s" % (string.ascii_letters, string.digits)
 
+project_dir = settings.PROJECT_DIR
+
 def safe_filename(filename):
     #make sure it's safe. Pass it through a whitelist.
     ''.join(c for c in filename if c in valid_chars)
@@ -223,7 +225,7 @@ def Upload(request):
             commands = ''
             filelisting = "\n".join(filelisting)
             try:
-                To = open('email.txt').read().replace(",","")
+                To = open(os.path.join(project_dir, 'email.txt')).read().replace(",","")
             except Exception as e:
                 print(e)
             print("Sending Email")
