@@ -200,7 +200,6 @@ def Upload(request):
             To = open('email.txt').read().replace(",","")
             To = [line for line in To.split("\n") if not line.startswith("#")]
             To = [line for line in To if line]
-            debug()
             
             msg = Message(To=To, From='lee@salk.edu', Subject='{0} Uploaded Files'.format(request.user.username))
             msg.Body = "\nGigabytes free: {0}\n\nFile Listing: {1}".format(gigsFree, filelisting)
