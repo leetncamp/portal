@@ -188,14 +188,20 @@ def Upload(request):
                     print("Error tring to makedirs {0}".format(temp_path))
                     os.makedirs(temp_path)
             
-            print("Opening Destination")    
-            destination = open(filename, "wb+")
+            print("Opening Destination") 
+            try:   
+                destination = open(filename, "wb+")
+            except Exception as e:
+                print(e)
             # save file data into the disk
             # use the chunk method in case the file is too big
             # in order not to clutter the system memory
             print("Saving file")
             for chunk in ufile.chunks():
-                destination.write(chunk)
+                try:
+                    destination.write(chunk)
+                except Exception as e:
+                    print(e)
                 # close the file
             destination.close()
             
