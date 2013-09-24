@@ -74,7 +74,10 @@ def Upload(request):
     """
 
     
-
+    tmpFree = subprocess.Popen(['df',"-h" , "/tmp"], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
+    print('tmpFree: {0}'.format(tmpFree))
+    gigsFree = subprocess.Popen(['df',"-h" , "."], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
+    print('gigsFree: {0}'.format(gigsFree))
     # settings for the file upload
     #   you can define other parameters here
     #   and check validity late in the code
@@ -218,9 +221,7 @@ def Upload(request):
             except Exception as e:
                 print(e)
             print("Name written")
-            print("Gigsfree")
-            gigsFree = subprocess.Popen(['df',"-h" , "."], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
-            tmpFree = subprocess.Popen(['df',"-h" , "/tmp"], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
+            
             print('tmpdir')
             try:
                 tmpdir = os.path.join(project_dir, "uploads")
@@ -318,7 +319,7 @@ def Upload(request):
         t = loader.get_template("upload.html")
         c = Context({
             #The manuscript
-            'manuscript':"manu",
+            'tmpFree':tmpFree,
             # the unique id which will be used to get the folder path
             "uid": "uid",
             # these two are necessary to generate the jQuery templates
