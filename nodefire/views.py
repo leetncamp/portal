@@ -34,12 +34,9 @@ def nodefire_test(request):
     
     menu.add("All","/nodefire",['menu'])
     print menu.html()
-    debug()
     menu.add('One',"/nodefire",['subitem'])
     print menu.html()
-    debug()
     menu.add('Dashboard',"/nodefire",['menu'])
     print menu.html()
-    debug()
     return render_to_response('nodefire_test.html', {'menu':menu},
         context_instance=RequestContext(request))

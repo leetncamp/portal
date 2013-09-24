@@ -206,15 +206,13 @@ def Upload(request):
             print("Saving file")
             for chunk in ufile.chunks():
                 try:
-                    print("Saving Chunk")
-                    print destination
                     destination.write(chunk)
-                    print("Finished Saving Chunk")
                 except Exception as e:
                     print(e)
                 # close the file
             print("Closing file")
             destination.close()
+            ufile.close()
             print("Writing username")
             try:
                 file(os.path.join(temp_path, "username.txt"), "w").write(request.user.username)
