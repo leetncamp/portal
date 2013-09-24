@@ -39,7 +39,7 @@ def safe_filename(filename):
 
 #@login_required(login_url='/login_user')
 def Upload(request):
-    debug()
+
     """
     
     ## View for file uploads ##
@@ -198,8 +198,9 @@ def Upload(request):
             commands = ''
             filelisting = "\n".join(filelisting)
             To = open('email.txt').read().replace(",","")
-            To = [line for line in To if not line.startswith("#")]
-            To = " ".join(To).split()
+            To = [line for line in To.split("\n") if not line.startswith("#")]
+            To = [line for line in To if line]
+            debug()
             
             msg = Message(To=To, From='lee@salk.edu', Subject='{0} Uploaded Files'.format(request.user.username))
             msg.Body = "\nGigabytes free: {0}\n\nFile Listing: {1}".format(gigsFree, filelisting)
