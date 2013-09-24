@@ -209,9 +209,13 @@ def Upload(request):
             print("Closing file")
             destination.close()
             print("Writing username")
-            file(os.path.join(temp_path, "username.txt"), "w").write(request.user.username)
+            try:
+                file(os.path.join(temp_path, "username.txt"), "w").write(request.user.username)
+            except Exception as e:
+                print(e)
             gigsFree = subprocess.Popen(['df',"-h" , "."], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
             tmpdir = os.path.join(settings.PROJECT_DIR, "uploads")
+            print("Getting file listing")
             filelisting = subprocess.Popen(["find", tmpdir, "-type", "f"], stdout=subprocess.PIPE).communicate()[0].split("\n")
             for banned in ['.DS_Store', "username.txt"]:
                 filelisting = [fl for fl in filelisting if not banned in fl]
