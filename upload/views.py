@@ -170,8 +170,10 @@ def Upload(request):
             print("Making Temp Directory")
             # make temporary dir if not exists already
             if not os.path.exists(temp_path):
-                os.makedirs(temp_path)            
-            
+                try:
+                    os.makedirs(temp_path)
+                except Exception as e:
+                    print(e)
             safename = safe_filename(ufile.name)
             filename = os.path.join(temp_path, safename)
 
