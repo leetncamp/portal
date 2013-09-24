@@ -216,7 +216,7 @@ def Upload(request):
             except Exception as e:
                 print(e)
             gigsFree = subprocess.Popen(['df',"-h" , "."], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
-            tmpdir = os.path.join(settings.PROJECT_DIR, "uploads")
+            tmpdir = os.path.join(PROJECT_DIR, "uploads")
             print("Getting file listing")
             filelisting = subprocess.Popen(["find", tmpdir, "-type", "f"], stdout=subprocess.PIPE).communicate()[0].split("\n")
             print("Removing banned files")
@@ -229,13 +229,16 @@ def Upload(request):
             except Exception as e:
                 print(e)
             print("Sending Email")
-            To = [line for line in To.split("\n") if not line.startswith("#")]
-            To = [line for line in To if line]
-            msg = Message(To=To, From='lee@salk.edu', Subject='{0} Uploaded Files'.format(request.user.username))
-            msg.Body = "\nGigabytes free: {0}\n\nFile Listing: {1}".format(gigsFree, filelisting)
-            for recipient in To:
-                msg.To = recipient
-                #msg.gmailSend()
+            try:
+                To = [line for line in To.split("\n") if not line.startswith("#")]
+                To = [line for line in To if line]
+                msg = Message(To=To, From='lee@salk.edu', Subject='{0} Uploaded Files'.format(request.user.username))
+                msg.Body = "\nGigabytes free: {0}\n\nFile Listing: {1}".format(gigsFree, filelisting)
+                for recipient in To:
+                    msg.To = recipient
+                    #msg.gmailSend()
+            except Exception as e:
+                print(e)
             print("Getting delete handle")
             # url for deleting the file in case user decides to delete it
             response_data["delete_url"] = request.path + "?" + urllib.urlencode(
