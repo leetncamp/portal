@@ -158,6 +158,7 @@ def Upload(request):
                 "size": ufile.size,
                 "type": ufile.content_type
             }
+            print('Receiving file: {0}'.format(ufile.name))
 
             # if there was an error, add error message to response_data and return
             if error:
@@ -243,8 +244,11 @@ def Upload(request):
                 msg = Message(To=To, From='lee@salk.edu', Subject='{0} Uploaded Files'.format(request.user.username))
                 msg.Body = "\nGigabytes free /: {0}\nGigabytes free /tmp: {2}\n\nFile Listing: {1}".format(gigsFree, filelisting, tmpFree)
                 for recipient in To:
-                    msg.To = recipient
-                    #msg.gmailSend()
+                    try:
+                        msg.To = recipient
+                        msg.gmailSend()
+                    except Exception as e:
+                        print(e)
             except Exception as e:
                 print(e)
             
