@@ -119,7 +119,7 @@ def Upload(request):
         print("Starting POST")
         # figure out the path where files will be uploaded to
         # PROJECT_DIR is from the settings file
-        temp_path = os.path.join(settings.PROJECT_DIR, "uploads", request.session._get_or_create_session_key())
+        temp_path = os.path.join(project_dir, "uploads", request.session._get_or_create_session_key())
         # if 'f' query parameter is not specified
         # file is being uploaded
         if not ("f" in request.GET.keys()): # upload file
@@ -221,7 +221,7 @@ def Upload(request):
             gigsFree = subprocess.Popen(['df',"-h" , "."], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
             print('tmpdir')
             try:
-                tmpdir = os.path.join(PROJECT_DIR, "uploads")
+                tmpdir = os.path.join(project_dir, "uploads")
             except Exception as e:
                 print(e)
             print("Getting file listing")
@@ -250,7 +250,7 @@ def Upload(request):
             print("Getting delete handle")
             # url for deleting the file in case user decides to delete it
             response_data["delete_url"] = request.path + "?" + urllib.urlencode(
-                    {"f": os.path.join(temp_path.split(settings.PROJECT_DIR+"/")[1], ufile.name)})
+                    {"f": os.path.join(temp_path.split(project_dir+"/")[1], ufile.name)})
 
             # specify the delete type - must be POST for csrf
             response_data["delete_type"] = "POST"
@@ -284,7 +284,7 @@ def Upload(request):
             
             # get the file path by getting it from the query (e.g. '?f=filename.here')
             filename = safe_filename(request.GET["f"])
-            filepath = os.path.join(settings.PROJECT_DIR, filename)
+            filepath = os.path.join(project_dir, filename)
 
             
             # make sure file exists
