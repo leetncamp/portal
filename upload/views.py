@@ -166,7 +166,8 @@ def Upload(request):
                 # return response to uploader with error
                 # so it can display error message
                 return HttpResponse(response_data, mimetype='application/json')
-
+            
+            print("Making Temp Directory")
             # make temporary dir if not exists already
             if not os.path.exists(temp_path):
                 os.makedirs(temp_path)            
@@ -175,11 +176,12 @@ def Upload(request):
             filename = os.path.join(temp_path, safename)
 
             #Before writing the files out, create the group folder based on the date of the group.
-
+            print("Create Group Folder")
 
             if not os.path.exists(temp_path):
                 os.makedirs(temp_path)
-                
+            
+            print("Opening Destination")    
             destination = open(filename, "wb+")
             # save file data into the disk
             # use the chunk method in case the file is too big
