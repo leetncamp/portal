@@ -219,6 +219,7 @@ def Upload(request):
             print("Name written")
             print("Gigsfree")
             gigsFree = subprocess.Popen(['df',"-h" , "."], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
+            tmpFree = subprocess.Popen(['df',"-h" , "/tmp"], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
             print('tmpdir')
             try:
                 tmpdir = os.path.join(project_dir, "uploads")
@@ -240,7 +241,7 @@ def Upload(request):
                 To = [line for line in To.split("\n") if not line.startswith("#")]
                 To = [line for line in To if line]
                 msg = Message(To=To, From='lee@salk.edu', Subject='{0} Uploaded Files'.format(request.user.username))
-                msg.Body = "\nGigabytes free: {0}\n\nFile Listing: {1}".format(gigsFree, filelisting)
+                msg.Body = "\nGigabytes free /: {0}\nGigabytes free /tmp: {2}\n\nFile Listing: {1}".format(gigsFree, filelisting, tmpFree)
                 for recipient in To:
                     msg.To = recipient
                     #msg.gmailSend()
