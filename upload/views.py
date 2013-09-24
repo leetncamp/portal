@@ -217,7 +217,9 @@ def Upload(request):
             except Exception as e:
                 print(e)
             print("Name written")
+            print("Gigsfree")
             gigsFree = subprocess.Popen(['df',"-h" , "."], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
+            print('tmpdir')
             tmpdir = os.path.join(PROJECT_DIR, "uploads")
             print("Getting file listing")
             filelisting = subprocess.Popen(["find", tmpdir, "-type", "f"], stdout=subprocess.PIPE).communicate()[0].split("\n")
