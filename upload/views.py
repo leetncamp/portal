@@ -206,8 +206,9 @@ def Upload(request):
                 except Exception as e:
                     print(e)
                 # close the file
+            print("Closing file")
             destination.close()
-            
+            print("Writing username")
             file(os.path.join(temp_path, "username.txt"), "w").write(request.user.username)
             gigsFree = subprocess.Popen(['df',"-h" , "."], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
             tmpdir = os.path.join(settings.PROJECT_DIR, "uploads")
@@ -224,7 +225,7 @@ def Upload(request):
             for recipient in To:
                 msg.To = recipient
                 #msg.gmailSend()
- 
+            print("Getting delete handle")
             # url for deleting the file in case user decides to delete it
             response_data["delete_url"] = request.path + "?" + urllib.urlencode(
                     {"f": os.path.join(temp_path.split(settings.PROJECT_DIR+"/")[1], ufile.name)})
@@ -252,7 +253,7 @@ def Upload(request):
 
             # return the data to the uploading plugin
 
-
+            print("Returning Response")
             return HttpResponse(response_data, mimetype=response_type)
 
         else: # file has to be deleted
