@@ -200,7 +200,9 @@ def Upload(request):
             for chunk in ufile.chunks():
                 try:
                     print("Saving Chunk")
+                    print destination
                     destination.write(chunk)
+                    print("Finished Saving Chunk")
                 except Exception as e:
                     print(e)
                 # close the file
