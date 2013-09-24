@@ -239,6 +239,8 @@ def Upload(request):
                     #msg.gmailSend()
             except Exception as e:
                 print(e)
+            print("ID information")
+            print os.popen('id').read()
             print("Getting delete handle")
             # url for deleting the file in case user decides to delete it
             response_data["delete_url"] = request.path + "?" + urllib.urlencode(
