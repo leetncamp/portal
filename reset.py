@@ -5,7 +5,7 @@ import os
 import sys
 from pdb import set_trace as debug
 
-pexpect.run('rm /var/lib/sqlite3/portalDB/portal.sqlite3')
+pexpect.run('rm upload.neurovigil.db')
 child=pexpect.spawn('./manage.py syncdb')
 child.expect('yes/no')
 child.sendline("yes")

@@ -10,7 +10,7 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 #SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 
-DB_NAME = "/var/lib/sqlite3/portalDB/portal.sqlite3"
+DB_NAME = "upload.neurovigil.db"
 
 ADMINS = (
     ('Lee Campbell', 'lee@snl.salk.edu'),
@@ -48,8 +48,8 @@ NEW_USERS_ARE_SUPERUSERS = False
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
 
-#TIME_ZONE = 'America/Los_Angeles'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Los_Angeles'
+
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = 'en-us'

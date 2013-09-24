@@ -2,3 +2,4 @@ tmp
 uploads
 *.pyc
 .*
+upload.neurovigil.db
