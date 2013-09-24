@@ -213,6 +213,7 @@ def Upload(request):
             destination.close()
             print("Writing username")
             try:
+                debug()
                 file(os.path.join(temp_path, "username.txt"), "w").write(request.user.username)
             except Exception as e:
                 print(e)
