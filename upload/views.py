@@ -189,7 +189,7 @@ def Upload(request):
             destination.close()
             
             file(os.path.join(temp_path, "username.txt"), "w").write(request.user.username)
-            gigsFree = subprocess.Popen(['df',"-gh" , "."], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
+            gigsFree = subprocess.Popen(['df',"-h" , "."], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
             tmpdir = os.path.join(settings.PROJECT_DIR, "uploads")
             filelisting = subprocess.Popen(["find", tmpdir, "-type", "f"], stdout=subprocess.PIPE).communicate()[0].split("\n")
             for banned in ['.DS_Store', "username.txt"]:
