@@ -382,12 +382,3 @@ def Upload(request):
 
 
 
-'''
-Lee's to-do
-=======
-Fix bug in parsing multiple names in the email file.
-Change username.txt to metadata.txt (name, ip, browser and os)
-Update HMTL page with instructions
-Add automatic rsync server.
-Add free space indicator for / to the upload page.
-'''
