@@ -46,15 +46,15 @@ sizeRE = re.compile("([\d\.]*)")
 def getFreeSpace():
     
     if uname[0] == "Linux":
-        units = "-BG"
+        units = "-BM"
     elif uname[0] == "Darwin":
-        units = "-bg"
+        units = "-bm"
     else:
         units = ""
     tmpFree = subprocess.Popen(['df', units, "/tmp"], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
-    tmpFree = float(re.search(sizeRE, tmpFree).group(1))
+    tmpFree = float(re.search(sizeRE, tmpFree).group(1)) / 1000
     rootFree = subprocess.Popen(['df', units, "/"], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
-    rootFree = float(re.search(sizeRE, rootFree).group(1))
+    rootFree = float(re.search(sizeRE, rootFree).group(1)) / 1000
     uploadFree = min(tmpFree, rootFree)
     result = {"tmpFree":tmpFree, "uploadFree":uploadFree, "rootFree":rootFree}
     return result
