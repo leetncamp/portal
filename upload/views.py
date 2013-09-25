@@ -129,6 +129,7 @@ def Upload(request):
     #   meaning user has triggered an upload action
 
     if request.method == 'POST':
+        debug()
         print("Starting POST")
         # figure out the path where files will be uploaded to
         # PROJECT_DIR is from the settings file
