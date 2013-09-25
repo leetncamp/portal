@@ -99,6 +99,7 @@ def Upload(request):
         # the file types which are going to be allowed for upload
         #   must be a mimetype
         "acceptedformats": (
+            "application/txt",
             "image/jpeg",
             "image/tiff",
             "image/png",
