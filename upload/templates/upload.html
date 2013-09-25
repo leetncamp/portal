@@ -3,22 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <title>NeuroVigil Upload Portal</title>
-
     <!-- Some CSS for the jQuery uploader UI -->
     <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/base/jquery-ui.css"
           id="theme">
     <link href="/static/admin/css/jquery.fileupload-ui.css" rel="stylesheet">
-
     <!-- jQuery Javascript -->
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.14/jquery-ui.min.js"></script>
     <!-- jQuery Templates -->
-    <script src="//ajax.aspnetcdn.com/ajax/jquery.templates/beta1/jquery.tmpl.min.js"></script>
+    
 
     <!-- Fixing CSRF in Django for jQuery -->
     <script src="/static/admin/js/jquery_fix_csrf.js"></script>
 
     <!-- jQuery Upload files -->
+    <script src="/static/admin/js/jquery.tmpl.min.js" type="text/javascript"></script>
     <script src="/static/admin/js/jquery.iframe-transport.js"></script>
     <script src="/static/admin/js/jquery.fileupload.js"></script>
     <script src="/static/admin/js/jquery.fileupload-ui.js"></script>
@@ -32,7 +31,7 @@
             // For a complete option reference go to
             // https://github.com/blueimp/jQuery-File-Upload
             $('#fileupload').fileupload({
-                // this formData is neccessary to pass the csrf and pass uid to django
+                // this formData is neccessary to pass the csrf and uid to django
                 formData: [
                     { name: "uid", value: "{{ uid }}"},
                     { name: "csrfmiddlewaretoken", value: "{{ csrf_token }}"},
@@ -94,12 +93,13 @@ function getFreeSpace() {
 		dataType: "json",
 		data: {},
 		success: function( data ){
-            console.log(data['tmpFree']);
-			$("#FreeSpace").html(data['tmpFree']);
+            console.log(data['uploadFree']);
+			$("#FreeSpace").html(data['uploadFree']);
 		},
 		error:function (xhr, ajaxOptions, thrownError){
-		                    alert(xhr.status);
-		                    alert(thrownError);
+                            $("#FreeSpace").html("*Error*");
+		                    //alert(xhr.status);
+		                    //alert(thrownError);
         }
 	})
 
@@ -137,7 +137,7 @@ var UpdateFreeSpace = window.setInterval(getFreeSpace, 4000)
 	        <div class="fileupload-progressbar"></div>
 	    </div>
         <h2>Drag and drop your files on this page to upload them to NeuroVigil.</h2>
-        <h2>Free Space <span id="FreeSpace">{{ tmpFree }}<span></h2>
+        <h2>Free Space: <span id="FreeSpace">{{ freeSpace.uploadFree }}</span> GB</h2>
 <script id="template-upload" type="text/x-jquery-tmpl">
     <tr class="template-upload{{ open_tv }}if error{{ close_tv }} ui-state-error{{ open_tv }}/if{{ close_tv }}">
         <td class="preview"></td>

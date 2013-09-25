@@ -2,21 +2,15 @@
 
 # import the django settings
 from django.conf import settings
-# for generating json
 from django.utils import simplejson
-# for loading template
 from django.template import Context, loader
-# for csrf
 from django.core.context_processors import csrf
-# for HTTP response
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
-# for os manipulations
 import os
 from pdb import set_trace as debug
 import datetime
 import urllib
-# used to generate random unique id
 import uuid
 from django.contrib.auth.decorators import login_required
 
@@ -24,13 +18,20 @@ import subprocess
 from snlmailer import Message
 
 import time
-
+import glob
 import string
 import re
 escapeRE = re.compile("^\.\./|^\/|^\.\/")
 valid_chars = "/-_.() %s%s" % (string.ascii_letters, string.digits)
 
 project_dir = settings.PROJECT_DIR
+
+uname = os.uname()
+
+import pprint
+
+ppr = pprint.PrettyPrinter(indent=4)
+
 
 def safe_filename(filename):
     #make sure it's safe. Pass it through a whitelist.
@@ -41,15 +42,31 @@ def safe_filename(filename):
     return (''.join(c for c in filename if c in valid_chars) )
 
 
-def freespace(request):
-    tmpFree = subprocess.Popen(['df',"-h" , "/tmp"], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
-    response_data = simplejson.dumps({"tmpFree":tmpFree})
-    #response_data = simplejson.dumps({"tmpFree":time.time()})
-    print response_data
+sizeRE = re.compile("([\d\.]*)")
+def getFreeSpace():
+    
+    if uname[0] == "Linux":
+        units = "-BG"
+    elif uname[0] == "Darwin":
+        units = "-bg"
+    else:
+        units = ""
+    tmpFree = subprocess.Popen(['df', units, "/tmp"], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
+    tmpFree = float(re.search(sizeRE, tmpFree).group(1))
+    rootFree = subprocess.Popen(['df', units, "/"], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
+    rootFree = float(re.search(sizeRE, rootFree).group(1))
+    uploadFree = min(tmpFree, rootFree)
+    result = {"tmpFree":tmpFree, "uploadFree":uploadFree, "rootFree":rootFree}
+    return result
 
+def freespace(request):
+    response_data = simplejson.dumps(getFreeSpace())
     return HttpResponse(response_data, mimetype='application/json')
 
-#@login_required(login_url='/login_user')
+osRE = re.compile("\((.*?)\)")
+clientNameRE = re.compile("domain\ name\ pointer\s(.*)\.")
+
+@login_required(login_url='/login_user')
 def Upload(request):
     print("Starting upload")
     """
@@ -84,10 +101,7 @@ def Upload(request):
     """
 
     
-    tmpFree = subprocess.Popen(['df',"-h" , "/tmp"], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
-    print('tmpFree: {0}'.format(tmpFree))
-    gigsFree = subprocess.Popen(['df',"-h" , "."], stdout=subprocess.PIPE).communicate()[0].split("\n")[1].split()[3]
-    print('gigsFree: {0}'.format(gigsFree))
+    freeSpace = getFreeSpace()
     # settings for the file upload
     #   you can define other parameters here
     #   and check validity late in the code
@@ -195,8 +209,6 @@ def Upload(request):
                     print(e)
             safename = safe_filename(ufile.name)
             filename = os.path.join(temp_path, safename)
-            print("ID information")
-            print os.popen('id').read()
             #Before writing the files out, create the group folder based on the date of the group.
             print("Create Group Folder")
 
@@ -225,12 +237,30 @@ def Upload(request):
             print("Closing file")
             destination.close()
             ufile.close()
-            print("Writing username")
+            print("Writing metadata")
+            meta = {"username":str(request.user.username)}
+            browser = request.META.get("HTTP_USER_AGENT")
+            meta['browser'] = browser.split()[-1]
             try:
-                file(os.path.join(temp_path, "username.txt"), "w").write(request.user.username)
+                meta['os'] = re.search(osRE, browser).group(1)
+            except exception as e:
+                print (e)
+                meta['os'] = 'Error {0}\n\n{1}'.format(browser, e)
+            meta['client_address'] = request.META.get("REMOTE_ADDR")
+
+            try:
+                reverseLookup = os.popen("host {0}".format(meta['client_address'])).read()
+                client_name = re.search(clientNameRE, reverseLookup).group(1)
+            except Exception as e:
+                client_name = reverseLookup
+            meta['client_name'] = client_name
+            metaStr = ppr.pformat(meta)
+
+            try:
+                file(os.path.join(temp_path, "metadata.txt"), "w").write(simplejson.dumps(meta))
             except Exception as e:
                 print(e)
-            print("Name written")
+            print("Metadata written")
             
             print('tmpdir')
             try:
@@ -238,22 +268,27 @@ def Upload(request):
             except Exception as e:
                 print(e)
             print("Getting file listing")
-            filelisting = subprocess.Popen(["find", tmpdir, "-type", "f"], stdout=subprocess.PIPE).communicate()[0].split("\n")
+            os.chdir(temp_path)
+            filelisting = glob.glob("*")
             print("Removing banned files")
             for banned in ['.DS_Store', "username.txt"]:
                 filelisting = [fl for fl in filelisting if not banned in fl]
             commands = ''
             filelisting = "\n".join(filelisting)
             try:
-                To = open(os.path.join(project_dir, 'email.txt')).read().replace(",","")
+                To = open(os.path.join(project_dir, 'email.txt')).read().replace(",","").split("\n")
             except Exception as e:
                 print(e)
+                To = []
             print("Sending Email")
             try:
-                To = [line for line in To.split("\n") if not line.startswith("#")]
-                To = [line for line in To if line]
-                msg = Message(To=To, From='lee@salk.edu', Subject='{0} Uploaded Files'.format(request.user.username))
-                msg.Body = "\nGigabytes free /: {0}\nGigabytes free /tmp: {2}\n\nFile Listing: {1}".format(gigsFree, filelisting, tmpFree)
+                #Remove comment lines
+                To = [line for line in To if not line.startswith("#")]
+                #Parse the names
+                To = " ".join(To).split()
+                msg = Message(To=To, From='snlsmtp@gmail.com', Subject='{0} Uploaded Files'.format(request.user.username))
+                msg.Body = "\nGigabytes free /uploads: {0}\nGigabytes free /tmp: {2}\n\nFile Listing for {4}:\n{1}\n\n{3}".format(freeSpace['rootFree'], filelisting, freeSpace['tmpFree'], metaStr, temp_path)
+                msg.makeFixedWidth()
                 for recipient in To:
                     try:
                         msg.To = recipient
@@ -329,7 +364,7 @@ def Upload(request):
         t = loader.get_template("upload.html")
         c = Context({
             #The manuscript
-            'tmpFree':tmpFree,
+            'freeSpace':freeSpace,
             # the unique id which will be used to get the folder path
             "uid": "uid",
             # these two are necessary to generate the jQuery templates
@@ -345,3 +380,14 @@ def Upload(request):
         # return
         return HttpResponse(t.render(c))
 
+
+
+'''
+Lee's to-do
+=======
+Fix bug in parsing multiple names in the email file.
+Change username.txt to metadata.txt (name, ip, browser and os)
+Update HMTL page with instructions
+Add automatic rsync server.
+Add free space indicator for / to the upload page.
+'''
