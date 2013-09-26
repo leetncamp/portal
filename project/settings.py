@@ -7,7 +7,7 @@ import django
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
 
 #SESSION_COOKIE_AGE = 2419200 #4 weeks in seconds
-#SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 
 DB_NAME = "/var/lib/sqlite3/portalDB/upload.neurovigil.db"
