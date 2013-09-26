@@ -133,7 +133,7 @@ TEMPLATE_DIRS = (
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     os.path.join(os.path.abspath(os.path.dirname(__file__)),'templates'),
-    os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))),'polls','templates'),
+    os.path.join(os.path.abspath(os.path.dirname(os.path.dirname(__file__))),'upload','templates'),
 )
 
 INSTALLED_APPS = (
@@ -148,6 +148,8 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
     'upload',
+    "project",
+    "nodefire"
 )
 
 # A sample logging configuration. The only tangible logging

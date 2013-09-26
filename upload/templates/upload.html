@@ -95,7 +95,7 @@ function getFreeSpace() {
 		success: function( data ){
             console.log(data['uploadFree']);
 			$("#FreeSpace").html(data['uploadFree']);
-            var UpdateFreeSpace = window.setInterval(getFreeSpace, 4000);
+            //var UpdateFreeSpace = window.setInterval(getFreeSpace, 4000);
 		},
 		error:function (xhr, ajaxOptions, thrownError){
                             $("#FreeSpace").html("*Error*");
