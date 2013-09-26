@@ -68,7 +68,7 @@ def freespace(request):
 osRE = re.compile("\((.*?)\)")
 clientNameRE = re.compile("domain\ name\ pointer\s(.*)\.")
 
-@login_required(login_url='/login_user')
+#@login_required(login_url='/login_user')
 def Upload(request):
     print("Starting upload")
     """
