@@ -6,6 +6,7 @@ from django.utils import simplejson
 from django.template import Context, loader
 from django.core.context_processors import csrf
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
+from django.template import RequestContext
 from django.shortcuts import render_to_response, get_object_or_404
 import os
 from pdb import set_trace as debug
@@ -57,6 +58,7 @@ def getFreeSpace():
     rootFree = float(re.search(sizeRE, rootFree).group(1)) / 1000
     uploadFree = min(tmpFree, rootFree)
     result = {"tmpFree":tmpFree, "uploadFree":uploadFree, "rootFree":rootFree}
+    print result
     return result
 
 def freespace(request):
@@ -100,6 +102,8 @@ def Upload(request):
 
     """
 
+    if "MSIE" in request.META.get("HTTP_USER_AGENT"):
+        return(render_to_response("internetexplorer.html", context_instance=RequestContext(request)))
     
     freeSpace = getFreeSpace()
     # settings for the file upload
@@ -176,9 +180,9 @@ def Upload(request):
                 error = "maxFileSize"
             if ufile.size < options["minfilesize"]:
                 error = "minFileSize"
-                # allowed file type
-            if ufile.content_type not in options["acceptedformats"]:
-                error = "acceptFileTypes"
+            # allowed file type
+            #if ufile.content_type not in options["acceptedformats"]:
+            #    error = "acceptFileTypes"
 
             print("Response data")
             # the response data which will be returned to the uploader as json

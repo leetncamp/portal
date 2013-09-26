@@ -16,9 +16,9 @@
     <!-- Fixing CSRF in Django for jQuery -->
     <script src="/static/admin/js/jquery_fix_csrf.js"></script>
 
-    <!-- jQuery Upload files -->
+    <!-- jQuery Upload files -->    
     <script src="/static/admin/js/jquery.tmpl.min.js" type="text/javascript"></script>
-    <script src="/static/admin/js/jquery.iframe-transport.js"></script>
+    <script src="/static/admin/js/jquery.iframe-transport.js" type="text/javascript"></script>
     <script src="/static/admin/js/jquery.fileupload.js"></script>
     <script src="/static/admin/js/jquery.fileupload-ui.js"></script>
 
@@ -41,6 +41,7 @@
                 minFileSize: {{ minfilesize }},
                 sequentialUploads: true,
 				autoUpload: true,
+                acceptFileTypes: /.*/,
 				
             });
 
@@ -95,6 +96,7 @@ function getFreeSpace() {
 		success: function( data ){
             console.log(data['uploadFree']);
 			$("#FreeSpace").html(data['uploadFree']);
+            var UpdateFreeSpace = window.setInterval(getFreeSpace, 4000);
 		},
 		error:function (xhr, ajaxOptions, thrownError){
                             $("#FreeSpace").html("*Error*");
@@ -103,8 +105,8 @@ function getFreeSpace() {
         }
 	})
 
-}
-var UpdateFreeSpace = window.setInterval(getFreeSpace, 4000)
+};
+var UpdateFreeSpace = window.setInterval(getFreeSpace, 4000);
 </script>
 
 
