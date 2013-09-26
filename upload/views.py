@@ -290,7 +290,7 @@ def Upload(request):
                 To = [line for line in To if not line.startswith("#")]
                 #Parse the names
                 To = " ".join(To).split()
-                msg = Message(To=To, From='snlsmtp@gmail.com', Subject='{0} Uploaded Files'.format(request.user.username))
+                msg = Message(To=To, From='snlsmtp@gmail.com', Subject='User "{0}" uploaded Files'.format(request.user.username))
                 msg.Body = "\nGigabytes free /uploads: {0}\nGigabytes free /tmp: {2}\n\nFile Listing for {4}:\n{1}\n\n{3}".format(freeSpace['rootFree'], filelisting, freeSpace['tmpFree'], metaStr, temp_path)
                 msg.makeFixedWidth()
                 for recipient in To:
