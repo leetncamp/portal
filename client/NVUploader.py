@@ -63,7 +63,7 @@ if __name__ == '__main__':
     cwd = os.path.dirname(sys.argv[0])
     if cwd.endswith("MacOS"):
         cwd = os.path.dirname(os.path.dirname(os.path.dirname(cwd)))
-    file("/tmp/cwd.txt", 'w').write(cwd)
+    #file("/tmp/cwd.txt", 'w').write(cwd)
     os.chdir(cwd)
     root = Tk()
     ex = Example(root)
