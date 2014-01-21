@@ -1,5 +1,5 @@
 #!/bin/sh
-del NV-Uploader.exe
+del NVUploader.exe
 cd pyinstaller
-c:\Python27\python.exe pyinstaller.py --onefile --noconfirm --windowed "..\NV-Uploader.py"
-move NV-Uploader\dist\NV-Uploader.exe ..
+c:\Python27\python.exe pyinstaller.py --onefile --noconfirm --windowed "..\NVUploader.py"
+move NVUploader\dist\NVUploader.exe ..
