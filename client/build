@@ -1,0 +1,3 @@
+#!/bin/sh
+cd pyinstaller
+c:\Python27\python.exe pyinstaller.py --noconfirm --windowed ..\NV-Uploader.py 
