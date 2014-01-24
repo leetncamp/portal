@@ -389,29 +389,36 @@ def Upload(request):
         return HttpResponse(t.render(c))
 
 
+def chunks(fileObj):
+    cont = True
+    while cont:
+        chunk = "".join(fileObj.readlines(chunkSize))
+        cont = chunk != ''
+        yield(zlib.compress(chunk))
+ 
+
+
 @csrf_exempt
-def verifychunk(request):
+def verifyfile(request):
     
     """The client sends information about chunk within a filename and the
     server response with either  'upload-needed' or 'verified'  """
-    
+    debug()
     request._load_post_and_files()
-    chunk = int(request._files['chunk'].read())
     filename = safe_filename(request._files['file'].read())
     folder = safe_filename(request._files['folder'].read())
-    working_folder = os.path.join(upload_dir, folder)    
-    #md5SUM is the remote sum and md5sum is the server side sum.
-    md5SUM = request._files['md5sum'].read()
+    working_folder = os.path.join(upload_dir, folder)
+    filepath = os.path.join(working_folder, filename)
     confpath = os.path.join(upload_dir, filename + ".upload" )
+    conf = {}
+    count = 0
     try:
-        conf = json.load(open(confpath, "r"))
-    except IOError:
-        conf = {}
-    md5sum = conf.get(chunk, {}).get('md5sum', "")
-    if md5sum == md5SUM:
-        data = {"status": "verified"}
-    else:
-        data = {"status": "upload-needed"}
+        for chunk in chunks(open(filepath, 'rb')):
+            conf[count] = hashlib.md5(chunk).hexdigest()
+            count += 1
+    except Exception as e:
+        debug()
+    data = {"conf":conf}
     return HttpResponse(json.dumps(data), mimetype='application/json')
 
 

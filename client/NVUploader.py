@@ -28,7 +28,7 @@ import tkMessageBox
 
 chunkSize = 1000000
 url = "http://localhost:8000/bupload"
-verifyurl = "http://localhost:8000/verifychunk"
+verifyurl = "http://localhost:8000/verifyfile"
 
 def chunks(fileObj):
     cont = True
@@ -97,22 +97,21 @@ class Main(Frame):
             length = eegFile.tell()
             nChunks = int(math.ceil(length / float(chunkSize)))
             eegFile.seek(0)
-            #Tell the server that we are starting so we don't 
-            #append to an existing file.
-            files = {'reset': ('reset', "Uploaded-" + eegFile.name )}
-            req = requests.post(url, files=files)
-            print json.loads(req.text)['status']
+            #Check to see if this file can be resumed.
+            fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
+            eegFile.seek(0)
+            files = {'fullMD5': ('fullMD5', fullMD5)}
+            files['file'] = eegFile.name
+            files['folder'] = folder
+            req = requests.post(verifyurl, files=files)
+            
             self.pb['value'] = 0
             self.parent.update()
             count = 0.0
             for chunk in chunks(eegFile):
                 if not self.pause:
                     md5sum = hashlib.md5(chunk).hexdigest()
-                    #Check to see if this chunk needs to be uploaded.
-                    files = {'chunk': ("count", str(int(count))), 'md5sum': ('md5sum', md5sum)}
-                    files['file'] = eegFile.name
-                    files['folder'] = folder
-                    req = requests.post(verifyurl, files=files)
+                    
                     if json.loads(req.text)['status'] == "upload-needed":
                         files = {'file': ('fullChunk', chunk ), 'md5sum': ('md5sum', md5sum)}
                         files['filename'] = eegFile.name
