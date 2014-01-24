@@ -28,6 +28,7 @@ import tkMessageBox
 
 chunkSize = 1000000
 url = "http://localhost:8000/bupload"
+verifyurl = "http://localhost:8000/verifychunk"
 
 def chunks(fileObj):
     cont = True
@@ -44,7 +45,7 @@ class Main(Frame):
         self.parent.title("Neurovigil Uploader")
         self.style = Style()
         self.patientName = StringVar()
-        self.patientLabel = Label(self, text="Patient Notes")
+        self.patientLabel = Label(self, text="Patient Name")
         self.patientLabel.place(x=10, y=10)
         self.entry = Entry(self, textvariable=self.patientName)
         self.entry.place(x=10, y=30)
@@ -62,6 +63,7 @@ class Main(Frame):
         self.quitButton = Button(self, text="Quit", command=self.quit)
         self.quitButton.place(x=200, y=400)
         self.pause = False
+        self.parent.lift()
     
     def quit(self):
         if self.quitButton['text'] == "Pause":
@@ -84,9 +86,11 @@ class Main(Frame):
         self.quitButton['text'] = "Pause"
         self.goButton['state'] = "disabled"
         self.parent.update()
+        folder = "{0}".format(self.patientName.get())
         num = len(self.fileGlob)
         count = 1
         for fn in self.fileGlob:
+            #Check for a progress indicator
             self.currentFile.set(fn)
             eegFile = open(fn, 'rb')
             eegFile.seek(0, 2)
@@ -94,7 +98,7 @@ class Main(Frame):
             nChunks = int(math.ceil(length / float(chunkSize)))
             eegFile.seek(0)
             #Tell the server that we are starting so we don't 
-            #.0append to an existing file.
+            #append to an existing file.
             files = {'reset': ('reset', "Uploaded-" + eegFile.name )}
             req = requests.post(url, files=files)
             print json.loads(req.text)['status']
@@ -104,10 +108,19 @@ class Main(Frame):
             for chunk in chunks(eegFile):
                 if not self.pause:
                     md5sum = hashlib.md5(chunk).hexdigest()
-                    files = {'file': ('fullChunk', chunk ), 'md5sum': ('md5sum', md5sum)}
-                    files['filename'] = "Uploaded-" + eegFile.name
-                    req = requests.post(url, files=files)
-                    result = json.loads(req.text)
+                    #Check to see if this chunk needs to be uploaded.
+                    files = {'chunk': ("count", str(int(count))), 'md5sum': ('md5sum', md5sum)}
+                    files['file'] = eegFile.name
+                    files['folder'] = folder
+                    req = requests.post(verifyurl, files=files)
+                    if json.loads(req.text)['status'] == "upload-needed":
+                        files = {'file': ('fullChunk', chunk ), 'md5sum': ('md5sum', md5sum)}
+                        files['filename'] = eegFile.name
+                        files['folder'] = folder
+                        req = requests.post(url, files=files)
+                        result = json.loads(req.text)
+                    else:
+                        print("Skipping chunk {0}".format(chunk))
                     self.pb['value'] = (count / nChunks) * 100
                     print (count / nChunks) * 100
                     count += 1
@@ -143,8 +156,9 @@ if __name__ == '__main__':
         conf = {}
     root = Tk()
     ex = Main(root)
-    root.geometry(conf.get("geometry", "300x450+900+100"))
+    root.geometry(conf.get("geometry", "300x450+100+100"))
     ex.fileGlob = glob.glob("*.txt")
     ex.set_filenames()
+    root.lift()
     root.mainloop()  
     print ex.patientName.get()

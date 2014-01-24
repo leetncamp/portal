@@ -29,6 +29,7 @@ escapeRE = re.compile("^\.\./|^\/|^\.\/")
 valid_chars = "/-_.() %s%s" % (string.ascii_letters, string.digits)
 
 project_dir = settings.PROJECT_DIR
+upload_dir = os.path.join(project_dir, "uploads")
 
 uname = os.uname()
 
@@ -387,6 +388,33 @@ def Upload(request):
         # return
         return HttpResponse(t.render(c))
 
+
+@csrf_exempt
+def verifychunk(request):
+    
+    """The client sends information about chunk within a filename and the
+    server response with either  'upload-needed' or 'verified'  """
+    
+    request._load_post_and_files()
+    chunk = int(request._files['chunk'].read())
+    filename = safe_filename(request._files['file'].read())
+    folder = safe_filename(request._files['folder'].read())
+    working_folder = os.path.join(upload_dir, folder)    
+    #md5SUM is the remote sum and md5sum is the server side sum.
+    md5SUM = request._files['md5sum'].read()
+    confpath = os.path.join(upload_dir, filename + ".upload" )
+    try:
+        conf = json.load(open(confpath, "r"))
+    except IOError:
+        conf = {}
+    md5sum = conf.get(chunk, {}).get('md5sum', "")
+    if md5sum == md5SUM:
+        data = {"status": "verified"}
+    else:
+        data = {"status": "upload-needed"}
+    return HttpResponse(json.dumps(data), mimetype='application/json')
+
+
 @csrf_exempt
 def bUpload(request):
     request._load_post_and_files()
@@ -398,10 +426,33 @@ def bUpload(request):
         except:
             return HttpResponse(json.dumps({"status":"not found"}), mimetype='application/json')
     filename = safe_filename(request._files['filename'].read())
+    foldername = safe_filename(request._files['folder'].read())
+    folderpath = os.path.join(upload_dir, foldername)
+    try:
+        os.makedirs(folderpath)
+    except OSError:
+        pass
+    filepath = os.path.join(folderpath, filename)
+    confpath = filepath + ".upload"
+    try:
+        conf = json.load(open(confpath, "r"))
+    except IOError:
+        conf = {}
+    try:
+        count = max(conf.keys())
+    except ValueError:
+        try:
+            os.remove(filepath)
+        except OSError:
+            pass
+        count = 0
     chunk = request._files['file'].read()
     md5SUM = request._files['md5sum'].read()
     md5sum = hashlib.md5(chunk).hexdigest()
     success = md5SUM == md5sum
-    open(filename, 'ab').write(zlib.decompress(chunk))
+    if success:
+        open(filepath, 'ab').write(zlib.decompress(chunk))
+        conf[count] = md5sum
+        json.dump(conf, file(confpath, 'wb'))
     data = {"status": success}
     return HttpResponse(json.dumps(data), mimetype='application/json')
