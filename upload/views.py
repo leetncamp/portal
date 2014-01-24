@@ -13,6 +13,7 @@ import os
 from pdb import set_trace as debug
 import datetime
 import urllib
+import zlib
 import uuid
 from django.contrib.auth.decorators import login_required
 import hashlib
@@ -389,9 +390,11 @@ def Upload(request):
 @csrf_exempt
 def bUpload(request):
     request._load_post_and_files()
+    filename = request._files['filename'].read()
     chunk = request._files['file'].read()
     md5SUM = request._files['md5sum'].read()
     md5sum = hashlib.md5(chunk).hexdigest()
     success = md5SUM == md5sum
+    open(filename, 'ab').write(zlib.decompress(chunk))
     data = {"status": success}
     return HttpResponse(json.dumps(data), mimetype='application/json')

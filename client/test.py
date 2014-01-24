@@ -36,6 +36,7 @@ eegFile.seek(0)
 for chunk in chunks(eegFile):
     md5sum = hashlib.md5(chunk).hexdigest()
     files = {'file': ('fullChunk', chunk ), 'md5sum': ('md5sum', md5sum)}
+    files['filename'] = "Uploaded-" + eegFile.name
     req = requests.post(url, files=files)
     result = json.loads(req.text)
     print result['status']
