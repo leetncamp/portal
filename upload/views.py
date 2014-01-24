@@ -2,9 +2,10 @@
 
 # import the django settings
 from django.conf import settings
-from django.utils import simplejson
+import json
 from django.template import Context, loader
 from django.core.context_processors import csrf
+from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.template import RequestContext
 from django.shortcuts import render_to_response, get_object_or_404
@@ -14,6 +15,7 @@ import datetime
 import urllib
 import uuid
 from django.contrib.auth.decorators import login_required
+import hashlib
 
 import subprocess
 from snlmailer import Message
@@ -62,7 +64,7 @@ def getFreeSpace():
     return result
 
 def freespace(request):
-    response_data = simplejson.dumps(getFreeSpace())
+    response_data = json.dumps(getFreeSpace())
     return HttpResponse(response_data, mimetype='application/json')
 
 osRE = re.compile("\((.*?)\)")
@@ -198,7 +200,7 @@ def Upload(request):
                 # append error message
                 response_data["error"] = error
                 # generate json
-                response_data = simplejson.dumps([response_data])
+                response_data = json.dumps([response_data])
                 # return response to uploader with error
                 # so it can display error message
                 return HttpResponse(response_data, mimetype='application/json')
@@ -261,7 +263,7 @@ def Upload(request):
             metaStr = ppr.pformat(meta)
 
             try:
-                file(os.path.join(temp_path, "metadata.txt"), "w").write(simplejson.dumps(meta))
+                file(os.path.join(temp_path, "metadata.txt"), "w").write(json.dumps(meta))
             except Exception as e:
                 print(e)
             print("Metadata written")
@@ -311,7 +313,7 @@ def Upload(request):
             response_data["delete_type"] = "POST"
 
             # generate the json data
-            response_data = simplejson.dumps([response_data])
+            response_data = json.dumps([response_data])
 
             # response type
             response_type = "application/json"
@@ -355,7 +357,7 @@ def Upload(request):
             # generate true json result
             # in this case is it a json True value
             # if true is not returned, the file will not be removed from the upload queue
-            response_data = simplejson.dumps(True)
+            response_data = json.dumps(True)
 
             # return the result data
             # here it always has to be json
@@ -384,5 +386,12 @@ def Upload(request):
         # return
         return HttpResponse(t.render(c))
 
-
-
+@csrf_exempt
+def bUpload(request):
+    request._load_post_and_files()
+    chunk = request._files['file'].read()
+    md5SUM = request._files['md5sum'].read()
+    md5sum = hashlib.md5(chunk).hexdigest()
+    success = md5SUM == md5sum
+    data = {"status": success}
+    return HttpResponse(json.dumps(data), mimetype='application/json')

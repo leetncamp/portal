@@ -10,23 +10,33 @@ import fileinput
 #pip install requests
 import requests
 #Readup on FileInput
-import md5
+import hashlib
 import json
-
+import math
 
 RE = re.compile("(\d\d\d\d);")
-
-eeg = open("EEG.txt", "r").read()
-numbers = [ int(x) for x in RE.findall(eeg) ]
-del eeg
-compactArray = array.array("H", numbers)
-del numbers
+chunkSize = 1000000
 url = "http://localhost:8000/bupload"
-compressedStr = zlib.compress(compactArray.tostring())
-md5sum =  md5.new(compressedStr).hexdigest()
-files = {'file': ('fullChunk', compressedStr ), 'md5sum': ('md5sum', md5sum)}
-req = requests.post(url, files=files)
-result = json.loads(req.text)
-print result['success']
+
+def chunks(fileObj):
+    cont = True
+    while cont:
+        chunk = "".join(fileObj.readlines(chunkSize))
+        cont = chunk != ''
+        yield(zlib.compress(chunk))
 
 
+#Get the length of the EEG file and the number of chunks that will be sent.
+eegFile = open("EEG.txt", "r")
+eegFile.seek(0, 2)
+length = eegFile.tell()
+nChunks = int(math.ceil(length / float(chunkSize)))
+eegFile.seek(0)
+
+for chunk in chunks(eegFile):
+    md5sum = hashlib.md5(chunk).hexdigest()
+    files = {'file': ('fullChunk', chunk ), 'md5sum': ('md5sum', md5sum)}
+    req = requests.post(url, files=files)
+    result = json.loads(req.text)
+    print result['status']
+    
