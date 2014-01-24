@@ -66,6 +66,11 @@ class Main(Frame):
     def quit(self):
         if self.quitButton['text'] == "Pause":
             self.pause = True
+            return
+        #Refresh the conf file before exiting.
+        #store the current window position
+        conf['geometry'] = self.parent.geometry()
+        json.dump(conf, file(".uploader.conf", 'wb'))
         sys.exit(0)
     
     def set_filenames(self):
@@ -129,9 +134,16 @@ if __name__ == '__main__':
         cwd = os.path.dirname(os.path.dirname(os.path.dirname(cwd)))
     #file("/tmp/cwd.txt", 'w').write(cwd)
     os.chdir(cwd)
+    #Try to read in a configuration file containing the last window position
+    #And any possible information about resuming an existing upload.
+
+    try:
+        conf = json.load(open('.uploader.conf'))
+    except IOError:
+        conf = {}
     root = Tk()
     ex = Main(root)
-    root.geometry("300x450+900+100")
+    root.geometry(conf.get("geometry", "300x450+900+100"))
     ex.fileGlob = glob.glob("*.txt")
     ex.set_filenames()
     root.mainloop()  
