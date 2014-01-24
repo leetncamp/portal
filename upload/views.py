@@ -76,7 +76,7 @@ def Upload(request):
     print("Starting upload")
     """
     
-    ## View for file uploads ##
+    ## View for browser-based file uploads ##
 
     It does the following actions:
         - displays a template if no action have been specified
@@ -84,8 +84,8 @@ def Upload(request):
                 unique directory for an upload session
                     meaning when user opens up an upload page, all upload actions
                     while being on that page will be uploaded to unique directory.
-                    as soon as user will reload, files will be uploaded to a different
-                    unique directory
+                    as soon as user reloads their browser, files will be uploaded 
+                    to a different unique directory
         - delete an uploaded file
 
     ## How Single View Multi-functions ##
@@ -94,7 +94,7 @@ def Upload(request):
         Or you can think of it as request.method will NOT be "POST"
     Therefore the view will always return the upload template
 
-    If on the other side the method is POST, that means some sort of upload action
+    If on the other hand the method is POST, that means some sort of upload action
     has to be done. That could be either uploading a file or deleting a file
 
     For deleting files, there is the same url (e.g. '/upload/'), except it has an
@@ -397,7 +397,7 @@ def bUpload(request):
             return HttpResponse(json.dumps({"status":"deleted"}), mimetype='application/json')
         except:
             return HttpResponse(json.dumps({"status":"not found"}), mimetype='application/json')
-    filename = request._files['filename'].read()
+    filename = safe_filename(request._files['filename'].read())
     chunk = request._files['file'].read()
     md5SUM = request._files['md5sum'].read()
     md5sum = hashlib.md5(chunk).hexdigest()
