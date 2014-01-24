@@ -390,6 +390,13 @@ def Upload(request):
 @csrf_exempt
 def bUpload(request):
     request._load_post_and_files()
+    reset = request._files.get("reset")
+    if reset:
+        try:
+            os.remove(reset.read())
+            return HttpResponse(json.dumps({"status":"deleted"}), mimetype='application/json')
+        except:
+            return HttpResponse(json.dumps({"status":"not found"}), mimetype='application/json')
     filename = request._files['filename'].read()
     chunk = request._files['file'].read()
     md5SUM = request._files['md5sum'].read()

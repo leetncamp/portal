@@ -1,20 +1,15 @@
 #!/usr/bin/env python
 import os, sys
-import urllib, urllib2
-import re
 from pdb import set_trace as debug
 import zlib
-import array
 from MultipartPostHandler import MultipartPostHandler
-import fileinput
 #pip install requests
 import requests
-#Readup on FileInput
 import hashlib
 import json
 import math
 
-RE = re.compile("(\d\d\d\d);")
+
 chunkSize = 1000000
 url = "http://localhost:8000/bupload"
 
@@ -32,6 +27,11 @@ eegFile.seek(0, 2)
 length = eegFile.tell()
 nChunks = int(math.ceil(length / float(chunkSize)))
 eegFile.seek(0)
+
+#Tell the server that we are starting so we don't append to an existing file.
+files = {'reset': ('reset', "Uploaded-" + eegFile.name )}
+req = requests.post(url, files=files)
+print json.loads(req.text)['status']
 
 for chunk in chunks(eegFile):
     md5sum = hashlib.md5(chunk).hexdigest()
