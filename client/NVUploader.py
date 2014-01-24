@@ -19,10 +19,25 @@ import glob
 import time
 import os
 import sys
+import math
+import requests
+import json
+import zlib
+import hashlib
+
+chunkSize = 1000000
+url = "http://localhost:8000/bupload"
+
+def chunks(fileObj):
+    cont = True
+    while cont:
+        chunk = "".join(fileObj.readlines(chunkSize))
+        cont = chunk != ''
+        yield(zlib.compress(chunk))
 
 
 
-class Example(Frame):
+class Main(Frame):
   
     def __init__(self, parent):
         Frame.__init__(self, parent)   
@@ -49,14 +64,33 @@ class Example(Frame):
         self.quitButton.place(x=200, y=400)
         
     def go(self):
+
         num = len(self.fileGlob)
         count = 1
-        for file in self.fileGlob:
-            self.currentFile.set(file)
-            time.sleep(.2)
-            self.pb['value'] = (count / num) * 100
-            count += 1
+        for fn in self.fileGlob:
+            self.currentFile.set(fn)
+            eegFile = open(fn, 'rb')
+            eegFile.seek(0, 2)
+            length = eegFile.tell()
+            nChunks = int(math.ceil(length / float(chunkSize)))
+            eegFile.seek(0)
+            #Tell the server that we are starting so we don't append to an existing file.
+            files = {'reset': ('reset', "Uploaded-" + eegFile.name )}
+            req = requests.post(url, files=files)
+            print json.loads(req.text)['status']
+            self.pb['value'] = 0
             self.parent.update()
+            count = 0.0
+            for chunk in chunks(eegFile):
+                md5sum = hashlib.md5(chunk).hexdigest()
+                files = {'file': ('fullChunk', chunk ), 'md5sum': ('md5sum', md5sum)}
+                files['filename'] = "Uploaded-" + eegFile.name
+                req = requests.post(url, files=files)
+                result = json.loads(req.text)
+                self.pb['value'] = (count / nChunks) * 100
+                print (count / nChunks) * 100
+                count += 1
+                self.parent.update()
             
         
 if __name__ == '__main__':
@@ -66,7 +100,7 @@ if __name__ == '__main__':
     #file("/tmp/cwd.txt", 'w').write(cwd)
     os.chdir(cwd)
     root = Tk()
-    ex = Example(root)
+    ex = Main(root)
     root.geometry("300x450+900+100")
     ex.fileGlob = glob.glob("*.txt")
     ex.fileNames.set("Files to upload\n=========\n\n" + "\n".join(ex.fileGlob))
