@@ -30,6 +30,11 @@ chunkSize = 1000000
 url = "http://localhost:8000/bupload"
 verifyurl = "http://localhost:8000/verifyfile"
 
+def open_req(req):
+    file('delme.html', "wb").write(req.text)
+    os.system("open delme.html")
+    return
+
 def chunks(fileObj):
     cont = True
     while cont:
@@ -102,34 +107,40 @@ class Main(Frame):
             eegFile.seek(0)
             files = {'fullMD5': ('fullMD5', fullMD5)}
             files['file'] = eegFile.name
-            files['folder'] = folder
+            files['chunkSize'] = str(chunkSize)
             req = requests.post(verifyurl, files=files)
-            
-            self.pb['value'] = 0
-            self.parent.update()
-            count = 0.0
-            for chunk in chunks(eegFile):
-                if not self.pause:
-                    md5sum = hashlib.md5(chunk).hexdigest()
-                    
-                    if json.loads(req.text)['status'] == "upload-needed":
-                        files = {'file': ('fullChunk', chunk ), 'md5sum': ('md5sum', md5sum)}
-                        files['filename'] = eegFile.name
-                        files['folder'] = folder
-                        req = requests.post(url, files=files)
-                        result = json.loads(req.text)
+            open_req(req)
+            verifyResult = json.loads(req.text)
+            chunkManifest = verifyResult['conf']
+            if verifyResult['status'] == "upload-needed":
+                self.pb['value'] = 0
+                self.parent.update()
+                count = 0
+                for chunk in chunks(eegFile):
+                    if not self.pause:
+                        md5sum = hashlib.md5(chunk).hexdigest()
+                        #The keys in conf are converted to str's by json
+                        manifestMD5sum = chunkManifest.get(str(count), "")
+                        debug()
+                        if md5sum != manifestMD5sum:
+                            files = {'file': ('fullChunk', chunk ), 'md5sum': ('md5sum', md5sum)}
+                            files['filename'] = eegFile.name
+                            files['folder'] = folder
+                            files['count'] = str(count)
+                            req = requests.post(url, files=files)
+                            result = json.loads(req.text)
+                        else:
+                            print("Skipping chunk {0}".format(chunk))
+                        self.pb['value'] = (float(count) / nChunks) * 100
+                        print (count / nChunks) * 100
+                        count += 1
+                        self.parent.update()
                     else:
-                        print("Skipping chunk {0}".format(chunk))
-                    self.pb['value'] = (count / nChunks) * 100
-                    print (count / nChunks) * 100
-                    count += 1
-                    self.parent.update()
-                else:
-                    self.goButton['state'] = "enabled"
-                    self.pause = False
-                    return
-            #Remove this filename from the list of filenames 
-            #that need to be uploaded
+                        self.goButton['state'] = "enabled"
+                        self.pause = False
+                        return
+                #Remove this filename from the list of filenames 
+                #that need to be uploaded
             del self.fileGlob[self.fileGlob.index(fn)]
             self.set_filenames()
         self.quitButton['text'] = "Quit"
@@ -158,6 +169,7 @@ if __name__ == '__main__':
     root.geometry(conf.get("geometry", "300x450+100+100"))
     ex.fileGlob = glob.glob("*.txt")
     ex.set_filenames()
+    ex.patientName.set("asdf")
     root.lift()
     root.mainloop()  
     print ex.patientName.get()

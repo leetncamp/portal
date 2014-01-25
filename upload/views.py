@@ -397,69 +397,67 @@ def chunks(fileObj):
         yield(zlib.compress(chunk))
  
 
-
+chunkSize = 1000000
 @csrf_exempt
 def verifyfile(request):
     
-    """The client sends information about chunk within a filename and the
-    server response with either  'upload-needed' or 'verified'  """
-    debug()
+    """The client sends information about a file and the
+    server responds with where to start uploading"""
+    
     request._load_post_and_files()
     filename = safe_filename(request._files['file'].read())
-    folder = safe_filename(request._files['folder'].read())
-    working_folder = os.path.join(upload_dir, folder)
-    filepath = os.path.join(working_folder, filename)
-    confpath = os.path.join(upload_dir, filename + ".upload" )
+    filepath = os.path.join(upload_dir, filename)
+    chunkSize = int(request._files['chunkSize'].read())
+    FULLMD5 = request._files['fullMD5'].read()
+    metapath = filepath +  ".upload" 
     conf = {}
+    length = 0
     count = 0
     try:
-        for chunk in chunks(open(filepath, 'rb')):
-            conf[count] = hashlib.md5(chunk).hexdigest()
-            count += 1
-    except Exception as e:
-        debug()
-    data = {"conf":conf}
+        eegFile = open(filepath, "rb")
+        eegFile.seek(0, 2)
+        length = eegFile.tell()
+        eegFile.seek(0)
+        fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
+        eegFile.seek(0)
+        if fullMD5 == FULLMD5:
+            #The two files match exactly.
+            status = "verified"
+        else:
+            status = "upload-needed"
+            eegFile.seek(0)
+            try:
+                for chunk in chunks(eegFile):
+                    conf[count] = hashlib.md5(chunk).hexdigest()
+                    count += 1
+            except Exception as e:
+                debug()
+    except IOError:
+        status = "upload-needed"
+
+    data = {"conf":conf, "length":length, "status":status}
     return HttpResponse(json.dumps(data), mimetype='application/json')
 
 
 @csrf_exempt
 def bUpload(request):
+    debug()
     request._load_post_and_files()
-    reset = request._files.get("reset")
-    if reset:
-        try:
-            os.remove(reset.read())
-            return HttpResponse(json.dumps({"status":"deleted"}), mimetype='application/json')
-        except:
-            return HttpResponse(json.dumps({"status":"not found"}), mimetype='application/json')
     filename = safe_filename(request._files['filename'].read())
-    foldername = safe_filename(request._files['folder'].read())
-    folderpath = os.path.join(upload_dir, foldername)
-    try:
-        os.makedirs(folderpath)
-    except OSError:
-        pass
-    filepath = os.path.join(folderpath, filename)
-    confpath = filepath + ".upload"
-    try:
-        conf = json.load(open(confpath, "r"))
-    except IOError:
-        conf = {}
-    try:
-        count = max(conf.keys())
-    except ValueError:
+    filepath = os.path.join(upload_dir, filename)
+    count = request._files['count'].read()
+    if count == "0":
         try:
             os.remove(filepath)
         except OSError:
             pass
-        count = 0
+    metapath = filepath + ".meta.txt"
     chunk = request._files['file'].read()
     md5SUM = request._files['md5sum'].read()
     md5sum = hashlib.md5(chunk).hexdigest()
     success = md5SUM == md5sum
     if success:
+        debug()
         open(filepath, 'ab').write(zlib.decompress(chunk))
-        conf[count] = md5sum
-        json.dump(conf, file(confpath, 'wb'))
     data = {"status": success}
     return HttpResponse(json.dumps(data), mimetype='application/json')
