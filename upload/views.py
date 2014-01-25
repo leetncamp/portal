@@ -389,27 +389,35 @@ def Upload(request):
         return HttpResponse(t.render(c))
 
 
+chunkSize = 1000000
+
 def chunks(fileObj):
     cont = True
     while cont:
         chunk = "".join(fileObj.readlines(chunkSize))
         cont = chunk != ''
         yield(zlib.compress(chunk))
- 
 
-chunkSize = 1000000
 @csrf_exempt
 def verifyfile(request):
     
     """The client sends information about a file and the
-    server responds with where to start uploading"""
+    server responds with a chunks manifest if there is
+    an eeg file avaiable on this end."""
     
     request._load_post_and_files()
     filename = safe_filename(request._files['file'].read())
     filepath = os.path.join(upload_dir, filename)
+    try:
+        fullMD5 = request._files['fullMD5'].read()
+        #If fullMD5 exists, assume you just want the 
+        #md5sum of the entire eeg file.
+        FULLMD5 = hashlib.md5(open(filepath, 'rb').read()).hexdigest()
+        data = {"verified": FULLMD5 == fullMD5}
+        return HttpResponse(json.dumps(data), mimetype='application/json')
+    except KeyError:
+        pass
     chunkSize = int(request._files['chunkSize'].read())
-    FULLMD5 = request._files['fullMD5'].read()
-    metapath = filepath +  ".upload" 
     conf = {}
     length = 0
     count = 0
@@ -420,28 +428,22 @@ def verifyfile(request):
         eegFile.seek(0)
         fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
         eegFile.seek(0)
-        if fullMD5 == FULLMD5:
-            #The two files match exactly.
-            status = "verified"
-        else:
-            status = "upload-needed"
-            eegFile.seek(0)
-            try:
-                for chunk in chunks(eegFile):
-                    conf[count] = hashlib.md5(chunk).hexdigest()
-                    count += 1
-            except Exception as e:
-                debug()
+        eegFile.seek(0)
+        try:
+            for chunk in chunks(eegFile):
+                conf[count] = hashlib.md5(chunk).hexdigest()
+                count += 1
+        except Exception as e:
+            debug()
     except IOError:
-        status = "upload-needed"
+        pass
 
-    data = {"conf":conf, "length":length, "status":status}
+    data = {"conf":conf, "length":length}
     return HttpResponse(json.dumps(data), mimetype='application/json')
 
 
 @csrf_exempt
 def bUpload(request):
-    debug()
     request._load_post_and_files()
     filename = safe_filename(request._files['filename'].read())
     filepath = os.path.join(upload_dir, filename)
@@ -457,7 +459,6 @@ def bUpload(request):
     md5sum = hashlib.md5(chunk).hexdigest()
     success = md5SUM == md5sum
     if success:
-        debug()
-        open(filepath, 'ab').write(zlib.decompress(chunk))
+        destFile = open(filepath, 'ab').write(zlib.decompress(chunk))
     data = {"status": success}
     return HttpResponse(json.dumps(data), mimetype='application/json')

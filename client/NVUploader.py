@@ -48,6 +48,9 @@ class Main(Frame):
         Frame.__init__(self, parent)   
         self.parent = parent
         self.parent.title("Neurovigil Uploader")
+        self.status = StringVar()
+        self.statusLabel = Label(self, text="", border=1, relief="sunken", anchor="w", textvariable=self.status)
+        self.statusLabel.pack(side="bottom", fill="x")
         self.style = Style()
         self.patientName = StringVar()
         self.patientLabel = Label(self, text="Patient Name")
@@ -100,19 +103,22 @@ class Main(Frame):
             eegFile = open(fn, 'rb')
             eegFile.seek(0, 2)
             length = eegFile.tell()
+            eegFile.seek(0)
             nChunks = int(math.ceil(length / float(chunkSize)))
-            eegFile.seek(0)
             #Check to see if this file can be resumed.
-            fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
-            eegFile.seek(0)
-            files = {'fullMD5': ('fullMD5', fullMD5)}
+            self.status.set("Checking for resume information.")
+            self.parent.update()
+            self.status.set("")
+            self.parent.update()
+            files = {}
             files['file'] = eegFile.name
             files['chunkSize'] = str(chunkSize)
             req = requests.post(verifyurl, files=files)
             open_req(req)
             verifyResult = json.loads(req.text)
+            verifyLength = verifyResult['length']
             chunkManifest = verifyResult['conf']
-            if verifyResult['status'] == "upload-needed":
+            if verifyLength != length:
                 self.pb['value'] = 0
                 self.parent.update()
                 count = 0
@@ -121,7 +127,6 @@ class Main(Frame):
                         md5sum = hashlib.md5(chunk).hexdigest()
                         #The keys in conf are converted to str's by json
                         manifestMD5sum = chunkManifest.get(str(count), "")
-                        debug()
                         if md5sum != manifestMD5sum:
                             files = {'file': ('fullChunk', chunk ), 'md5sum': ('md5sum', md5sum)}
                             files['filename'] = eegFile.name
@@ -130,7 +135,7 @@ class Main(Frame):
                             req = requests.post(url, files=files)
                             result = json.loads(req.text)
                         else:
-                            print("Skipping chunk {0}".format(chunk))
+                            print("Skipping chunk {0}".format(count))
                         self.pb['value'] = (float(count) / nChunks) * 100
                         print (count / nChunks) * 100
                         count += 1
@@ -139,12 +144,24 @@ class Main(Frame):
                         self.goButton['state'] = "enabled"
                         self.pause = False
                         return
-                #Remove this filename from the list of filenames 
-                #that need to be uploaded
+                self.status.set('Verifying')
+                self.parent.update()
+                fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
+                eegFile.seek(0)
+                files = {}
+                files['file'] = eegFile.name
+                files['fullMD5'] = fullMD5
+                req = requests.post(verifyurl, files=files)
+                open_req(req)
+                debug()
+                
+            #Remove this filename from the list of filenames 
+            #that need to be uploaded
             del self.fileGlob[self.fileGlob.index(fn)]
             self.set_filenames()
         self.quitButton['text'] = "Quit"
         self.goButton['text'] = "Done"
+        self.status.set("All files uploaded. Press Quit.")
         self.goButton['command'] = self.quit
         self.parent.update()
             
