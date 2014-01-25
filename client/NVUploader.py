@@ -98,23 +98,37 @@ class Main(Frame):
         self.statusLabel.pack(side="bottom", fill="x")
         self.pause = False
         self.parent.lift()
+        self.parent.bind("<FocusOut>", self.saveAppConf)
+
+    def saveAppConf(self, event=None):
+        appConf['geometry'] = self.parent.geometry()
+        appConf['patientID'] = self.patientID.get()
+        appConf['userName'] = self.userName.get()
+        json.dump(appConf, file(".uploader.conf", 'wb'))
+        log("Wrote " + json.dumps(appConf))
+        return()
+    
+    def widgetLeave(self, event):
+        pass
     
     def quit(self):
+        #If the quit button's text has been changed to pause.
         if self.quitButton['text'] == "Pause":
             self.pause = True
             return
-        #Refresh the conf file before exiting.
-        #store the current window position
-        conf['geometry'] = self.parent.geometry()
-        json.dump(conf, file(".uploader.conf", 'wb'))
-        log("Quitting")
-        sys.exit(0)
+        else:
+            #Refresh the conf file before exiting.
+            #store the current window position
+            self.saveAppConf()
+            log("Quitting")
+            sys.exit(0)
     
     def set_filenames(self):
         self.fileNames.set("Files to upload\n=========\n\n" + "\n".join(self.fileGlob))
         self.parent.update()
         
     def go(self):
+        self.saveAppConf()
         if self.patientID.get() == "":
             tkMessageBox.showwarning("Required information is missing", "Patient Name is required.")
             return
@@ -221,15 +235,16 @@ if __name__ == '__main__':
     #And any possible information about resuming an existing upload.
 
     try:
-        conf = json.load(open('.uploader.conf'))
+        appConf = json.load(open('.uploader.conf'))
     except IOError:
-        conf = {}
+        appConf = {}
     root = Tk()
     ex = Main(root)
-    root.geometry(conf.get("geometry", "390x450+100+100"))
+    root.geometry(appConf.get("geometry", "390x450+100+100"))
     ex.fileGlob = glob.glob("*.txt")
     ex.set_filenames()
-    ex.patientID.set("asdf")
+    ex.patientID.set(appConf.get("patientID", ""))
+    ex.userName.set(appConf.get("userName", ""))
     root.lift()
     root.mainloop()  
     log( ex.patientID.get())
