@@ -1,0 +1,9 @@
+('/Users/lee/Desktop/portal/client/pyinstaller/Uploader/build/Uploader/Uploader',
+ False,
+ False,
+ None,
+ None,
+ [],
+ None,
+ True,
+ 1390278007)

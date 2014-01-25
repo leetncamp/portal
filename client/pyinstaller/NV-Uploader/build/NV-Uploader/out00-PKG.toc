@@ -1,0 +1,11 @@
+('/Users/lee/Desktop/portal/client/pyinstaller/NV-Uploader/build/NV-Uploader/out00-PKG.pkg',
+ {'BINARY': 1,
+  'DATA': 1,
+  'EXECUTABLE': 1,
+  'EXTENSION': 1,
+  'PYMODULE': 1,
+  'PYSOURCE': 1},
+ [('out00-PYZ.pyz', '/Users/lee/Desktop/portal/client/pyinstaller/NV-Uploader/build/NV-Uploader/out00-PYZ.pyz', 'PYZ'), ('_struct', '/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/lib-dynload/_struct.so', 'EXTENSION'), ('struct', '/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/struct.pyc', 'PYMODULE'), ('pyi_os_path', '/Users/lee/Desktop/portal/client/pyinstaller/PyInstaller/loader/pyi_os_path.pyc', 'PYMODULE'), ('pyi_archive', '/Users/lee/Desktop/portal/client/pyinstaller/PyInstaller/loader/pyi_archive.pyc', 'PYMODULE'), ('pyi_importers', '/Users/lee/Desktop/portal/client/pyinstaller/PyInstaller/loader/pyi_importers.pyc', 'PYMODULE'), ('_pyi_bootstrap', '/Users/lee/Desktop/portal/client/pyinstaller/PyInstaller/loader/_pyi_bootstrap.py', 'PYSOURCE'), ('pyi_carchive', '/Users/lee/Desktop/portal/client/pyinstaller/PyInstaller/loader/pyi_carchive.py', 'PYSOURCE'), ('pyi_rth_Tkinter', '/Users/lee/Desktop/portal/client/pyinstaller/PyInstaller/loader/rthooks/pyi_rth_Tkinter.py', 'PYSOURCE'), ('NV-Uploader', '../NV-Uploader.py', 'PYSOURCE')],
+ True,
+ None,
+ True)

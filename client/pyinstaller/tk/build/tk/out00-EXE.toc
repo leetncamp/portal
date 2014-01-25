@@ -1,0 +1,9 @@
+('/Users/lee/Downloads/pyinstaller/tk/build/tk/tk',
+ False,
+ False,
+ None,
+ None,
+ [],
+ None,
+ True,
+ 1390277560)
