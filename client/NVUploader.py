@@ -13,7 +13,7 @@ website: www.zetcode.com
 """
 from __future__ import division
 from ttk import *
-from Tkinter import Tk, BOTH, IntVar, StringVar
+from Tkinter import Tk, BOTH, IntVar, StringVar, Text
 from pdb import set_trace as debug
 import glob
 import time
@@ -65,28 +65,37 @@ class Main(Frame):
         Frame.__init__(self, parent)   
         self.parent = parent
         self.parent.title("Neurovigil Uploader")
-        self.status = StringVar()
-        self.statusLabel = Label(self, text="", border=1, relief="sunken", anchor="w", textvariable=self.status)
-        self.statusLabel.pack(side="bottom", fill="x")
         self.style = Style()
-        self.patientName = StringVar()
-        self.patientLabel = Label(self, text="Patient Name")
+        self.patientID = StringVar()
+        self.patientLabel = Label(self, text="Patient ID")
         self.patientLabel.place(x=10, y=10)
-        self.entry = Entry(self, textvariable=self.patientName)
-        self.entry.place(x=10, y=30)
+        self.userName = StringVar()
+        self.userNameLabel = Label(self, text="User Name")
+        self.userNameLabel.place(x=200, y=10)
+        self.patientIDEntry = Entry(self, textvariable=self.patientID)
+        self.patientIDEntry.place(x=10, y=30)
+        self.userNameEntry = Entry(self, textvariable=self.userName)
+        self.userNameEntry.place(x=200, y=30)
+        self.patientNotes = StringVar()
+        self.patientNotesEntry = Text(self)
+        self.patientNotesEntry.config(width=50, height=10, bd=1, relief="sunken")
+        self.patientNotesEntry.place(x=10, y=100)
         self.pb = Progressbar(self, mode='determinate')
         self.pb.place(x=13, y = 80, width=100)
         self.pack(fill=BOTH, expand=1)
         self.fileNames = StringVar()
         self.fileLabel = Label(self, textvariable=self.fileNames)
-        self.fileLabel.place(x=13, y=120)
+        self.fileLabel.place(x=13, y=270)
         self.currentFile = StringVar()
         self.currentFileLabel = Label(self, textvariable=self.currentFile)
         self.currentFileLabel.place(x=13, y=60)
         self.goButton = Button(self, command=self.go, text="Upload")
         self.goButton.place(x=10, y = 400)
         self.quitButton = Button(self, text="Quit", command=self.quit)
-        self.quitButton.place(x=200, y=400)
+        self.quitButton.place(x=290, y=400)
+        self.status = StringVar()
+        self.statusLabel = Label(self, text="", border=1, relief="sunken", anchor="w", textvariable=self.status)
+        self.statusLabel.pack(side="bottom", fill="x")
         self.pause = False
         self.parent.lift()
     
@@ -106,13 +115,13 @@ class Main(Frame):
         self.parent.update()
         
     def go(self):
-        if self.patientName.get() == "":
+        if self.patientID.get() == "":
             tkMessageBox.showwarning("Required information is missing", "Patient Name is required.")
             return
         self.quitButton['text'] = "Pause"
         self.goButton['state'] = "disabled"
         self.parent.update()
-        folder = "{0}".format(self.patientName.get())
+        folder = "{0}".format(self.patientID.get())
         num = len(self.fileGlob)
         count = 1
         for fn in self.fileGlob:
@@ -131,7 +140,10 @@ class Main(Frame):
             files['chunkSize'] = str(chunkSize)
             req = requests.post(verifyurl, files=files)
             #open_req(req)
-            verifyResult = json.loads(req.text)
+            try:
+                verifyResult = json.loads(req.text)
+            except ValueError:
+                open_req(req)
             verifyLength = verifyResult['length']
             chunkManifest = verifyResult['conf']
             lenChunkManifest = len(chunkManifest)
@@ -156,7 +168,10 @@ class Main(Frame):
                             files['folder'] = folder
                             files['count'] = str(count)
                             req = requests.post(url, files=files)
-                            result = json.loads(req.text)
+                            try:
+                                result = json.loads(req.text)
+                            except:
+                                open_req(req)
                         else:
                             log("Skipping chunk {0}".format(count))
                         self.pb['value'] = (float(count) / nChunks) * 100
@@ -211,10 +226,10 @@ if __name__ == '__main__':
         conf = {}
     root = Tk()
     ex = Main(root)
-    root.geometry(conf.get("geometry", "300x450+100+100"))
+    root.geometry(conf.get("geometry", "390x450+100+100"))
     ex.fileGlob = glob.glob("*.txt")
     ex.set_filenames()
-    ex.patientName.set("asdf")
+    ex.patientID.set("asdf")
     root.lift()
     root.mainloop()  
-    log( ex.patientName.get())
+    log( ex.patientID.get())

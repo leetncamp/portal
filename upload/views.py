@@ -459,6 +459,6 @@ def bUpload(request):
     md5sum = hashlib.md5(chunk).hexdigest()
     success = md5SUM == md5sum
     if success:
-        destFile = open(filepath, 'ab').write(zlib.decompress(chunk))
+        destFile = file(filepath, 'ab').write(zlib.decompress(chunk))
     data = {"status": success}
     return HttpResponse(json.dumps(data), mimetype='application/json')
