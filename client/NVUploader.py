@@ -25,10 +25,27 @@ import json
 import zlib
 import hashlib
 import tkMessageBox
+import datetime
+import pytz
+mytz=pytz.timezone("America/Los_Angeles")
 
 chunkSize = 1000000
 url = "http://localhost:8000/bupload"
 verifyurl = "http://localhost:8000/verifyfile"
+
+def now():
+    return(datetime.datetime.utcnow().replace(tzinfo=pytz.utc))
+
+
+logfile = file("upload.log", 'a')
+def log(txt):
+
+    logfile.write("{0} : {1}\n".format(now().astimezone(mytz), txt))
+    logfile.flush()
+    print txt
+
+log("========================")
+log(now())
 
 def open_req(req):
     file('delme.html', "wb").write(req.text)
@@ -81,6 +98,7 @@ class Main(Frame):
         #store the current window position
         conf['geometry'] = self.parent.geometry()
         json.dump(conf, file(".uploader.conf", 'wb'))
+        log("Quitting")
         sys.exit(0)
     
     def set_filenames(self):
@@ -108,16 +126,21 @@ class Main(Frame):
             #Check to see if this file can be resumed.
             self.status.set("Checking for resume information.")
             self.parent.update()
-            self.status.set("")
-            self.parent.update()
             files = {}
             files['file'] = eegFile.name
             files['chunkSize'] = str(chunkSize)
             req = requests.post(verifyurl, files=files)
-            open_req(req)
+            #open_req(req)
             verifyResult = json.loads(req.text)
             verifyLength = verifyResult['length']
             chunkManifest = verifyResult['conf']
+            lenChunkManifest = len(chunkManifest)
+            if lenChunkManifest == 0:
+                log("Starting upload for {0}".format(eegFile.name))
+            else:
+                log("Resuming upload for {0}".format(eegFile.name))
+            self.status.set("Uploading {0}".format(eegFile.name))
+            self.parent.update()
             if verifyLength != length:
                 self.pb['value'] = 0
                 self.parent.update()
@@ -135,25 +158,30 @@ class Main(Frame):
                             req = requests.post(url, files=files)
                             result = json.loads(req.text)
                         else:
-                            print("Skipping chunk {0}".format(count))
+                            log("Skipping chunk {0}".format(count))
                         self.pb['value'] = (float(count) / nChunks) * 100
-                        print (count / nChunks) * 100
+                        print((count / nChunks) * 100)
                         count += 1
                         self.parent.update()
                     else:
                         self.goButton['state'] = "enabled"
                         self.pause = False
                         return
-                self.status.set('Verifying')
+            else:
+                #Skip this entire file.
+                self.pb['value'] = 100
                 self.parent.update()
-                fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
-                eegFile.seek(0)
-                files = {}
-                files['file'] = eegFile.name
-                files['fullMD5'] = fullMD5
-                req = requests.post(verifyurl, files=files)
-                open_req(req)
-                debug()
+            self.status.set('Verifying...')
+            self.parent.update()
+            fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
+            eegFile.seek(0)
+            files = {}
+            files['file'] = eegFile.name
+            files['fullMD5'] = fullMD5
+            req = requests.post(verifyurl, files=files)
+            if json.loads(req.text)['verified']:
+                log("Verified upload of {0}".format(eegFile.name))
+            #open_req(req)
                 
             #Remove this filename from the list of filenames 
             #that need to be uploaded
@@ -161,7 +189,7 @@ class Main(Frame):
             self.set_filenames()
         self.quitButton['text'] = "Quit"
         self.goButton['text'] = "Done"
-        self.status.set("All files uploaded. Press Quit.")
+        self.status.set("All files uploaded. Press Quit to exit.")
         self.goButton['command'] = self.quit
         self.parent.update()
             
@@ -189,4 +217,4 @@ if __name__ == '__main__':
     ex.patientName.set("asdf")
     root.lift()
     root.mainloop()  
-    print ex.patientName.get()
+    log( ex.patientName.get())
