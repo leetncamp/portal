@@ -2,7 +2,7 @@
 import os
 from pdb import set_trace as debug
 DEBUG = not "upload" in os.uname()[1]
-DEBUG = TRUE
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 import django
 PROJECT_DIR = os.path.dirname(os.path.dirname(__file__))
