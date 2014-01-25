@@ -12,8 +12,8 @@ last modified: December 2010
 website: www.zetcode.com
 """
 from __future__ import division
+from Tkinter import *
 from ttk import *
-from Tkinter import Tk, BOTH, IntVar, StringVar, Text
 from pdb import set_trace as debug
 import glob
 import time

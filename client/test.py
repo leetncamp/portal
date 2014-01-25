@@ -1,43 +1,29 @@
 #!/usr/bin/env python
-import os, sys
+from __future__ import division
+
+from Tkinter import *
+from ttk import *
 from pdb import set_trace as debug
-import zlib
-from MultipartPostHandler import MultipartPostHandler
-#pip install requests
-import requests
-import hashlib
-import json
-import math
+import sys
+
+class Main(Frame):
+  
+    def __init__(self, parent):
+        Frame.__init__(self, parent)   
+        self.e1 = Entry(self)
+        self.e1.grid(row=1, column=1)
 
 
-chunkSize = 1000000
-url = "http://localhost:8000/bupload"
+master = Tk()
+Label(master, text="First").grid(row=0, sticky=W)
+Label(master, text="Second").grid(row=1, sticky=W)
 
-def chunks(fileObj):
-    cont = True
-    while cont:
-        chunk = "".join(fileObj.readlines(chunkSize))
-        cont = chunk != ''
-        yield(zlib.compress(chunk))
+e1 = Entry(master)
+e2 = Entry(master)
 
+e1.grid(row=0, column=1)
+e2.grid(row=1, column=1)
 
-#Get the length of the EEG file and the number of chunks that will be sent.
-eegFile = open("EEG.txt", "r")
-eegFile.seek(0, 2)
-length = eegFile.tell()
-nChunks = int(math.ceil(length / float(chunkSize)))
-eegFile.seek(0)
-
-#Tell the server that we are starting so we don't append to an existing file.
-files = {'reset': ('reset', "Uploaded-" + eegFile.name )}
-req = requests.post(url, files=files)
-print json.loads(req.text)['status']
-
-for chunk in chunks(eegFile):
-    md5sum = hashlib.md5(chunk).hexdigest()
-    files = {'file': ('fullChunk', chunk ), 'md5sum': ('md5sum', md5sum)}
-    files['filename'] = "Uploaded-" + eegFile.name
-    req = requests.post(url, files=files)
-    result = json.loads(req.text)
-    print result['status']
-    
+Button(master, text="Quit", command=sys.exit).grid(row=3)
+debug()
+#root.mainloop()
