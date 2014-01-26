@@ -1,19 +1,11 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
-"""
-ZetCode Tkinter tutorial
-
-In this script, we show how to
-use the Scale widget.
-
-author: Jan Bodnar
-last modified: December 2010
-website: www.zetcode.com
-"""
+#!/usr/bin/env python
 from __future__ import division
-from Tkinter import *
-from ttk import *
+
+
+from pdb import set_trace as debug
+import Tkinter as tk
+import ttk
+
 from pdb import set_trace as debug
 import glob
 import time
@@ -28,6 +20,7 @@ import tkMessageBox
 import datetime
 import pytz
 mytz=pytz.timezone("America/Los_Angeles")
+import traceback as tb
 
 chunkSize = 1000000
 url = "http://localhost:8000/bupload"
@@ -47,15 +40,6 @@ def log(txt):
 log("========================")
 log(now())
 
-class RequestPost(self, url, files):
-    def __init__(self, main, req):
-        self.url = url
-        self.files = files
-    def __enter__(self):
-        return requests.post(self.url, self.files)
-    def __exit__(self, type, value, traceback):
-        self.quitButton['text'] = "Quit"
-
 def open_req(req):
     file('delme.html', "wb").write(req.text)
     os.system("open delme.html")
@@ -68,58 +52,81 @@ def chunks(fileObj):
         cont = chunk != ''
         yield(zlib.compress(chunk))
 
-class Main(Frame):
-  
-    def __init__(self, parent):
-        Frame.__init__(self, parent)   
-        self.parent = parent
-        self.parent.title("Neurovigil Uploader")
 
-        self.patientID = StringVar()
-        self.patientLabel = Label(self, text="Patient ID")
-        self.patientLabel.place(x=10, y=10)
-        self.userName = StringVar()
-        self.userNameLabel = Label(self, text="User Name")
-        self.userNameLabel.place(x=200, y=10)
-        self.patientIDEntry = Entry(self, textvariable=self.patientID)
-        self.patientIDEntry.place(x=10, y=30)
-        self.userNameEntry = Entry(self, textvariable=self.userName)
-        self.userNameEntry.place(x=200, y=30)
-        self.patientNotes = StringVar()
-        self.patientNotesEntry = Text(self)
-        self.patientNotesEntry.config(width=50, height=10, bd=1, relief="sunken")
-        self.patientNotesEntry.place(x=10, y=100)
-        self.pb = Progressbar(self, mode='determinate')
-        self.pb.place(x=13, y = 80, width=100)
-        self.pack(fill=BOTH, expand=1)
-        self.fileNames = StringVar()
-        self.fileLabel = Label(self, textvariable=self.fileNames)
-        self.fileLabel.place(x=13, y=270)
-        self.currentFile = StringVar()
-        self.currentFileLabel = Label(self, textvariable=self.currentFile)
-        self.currentFileLabel.place(x=13, y=60)
-        self.goButton = Button(self, command=self.go, text="Upload")
-        self.goButton.place(x=10, y = 400)
-        self.quitButton = Button(self, text="Quit", command=self.quit)
-        self.quitButton.place(x=290, y=400)
-        self.statusFrame = Frame(self)
-        self.status = StringVar()
-        self.statusLabel = Label(self.statusFrame, text="", border=1, relief="sunken", anchor="w", textvariable=self.status)
-        self.statusLabel.pack(side="bottom", fill="x")
-        self.test=Button(self.statusFrame, text="test").pack()
+class Catch():
+    def __init__(self, instance):
+
+        self.instance = instance
+    def __enter__(self):
+        return self.instance
+    def __exit__(self, type, value, traceback):
+        if type != None:
+            self.instance.quitButton['text'] = "Quit"
+            log("Caught exception. Enabling the Quit and Upload buttons.")
+            self.instance.goButton['state'] = 'enabled'
+            self.instance.status.set("Problem uploading. You may press Upload again to retry.")
+            log(type)
+            log(value)
+            log(tb.format_exc(traceback))
+
+
+class Main(ttk.Frame):
+    def __init__(self, root, *args, **kwargs):
+        ttk.Frame.__init__(self, root, *args, **kwargs)
+        style = ttk.Style()
+        print style.theme_use()
+        #style.configure("BW.TLabel", foreground="black", background="white")
+        
+        self.root = root
+        ttk.Style()
+        self.top = ttk.Frame()
+        self.style = ttk.Style()
+        self.top.pack(side="top", fill="x", padx=10, pady=10)
+        self.patientID = tk.StringVar()
+        self.userName = tk.StringVar()
+        self.patientIDLabel = ttk.Label(self.top, text="Patient ID:")
+        self.userNameLabel = ttk.Label(self.top, text="User Name:")
+        self.patientIDLabel.grid(row=0, column=0, padx=10, pady=10)
+        self.userNameLabel.grid(row=0, column=4, padx=10, pady=10)
+        self.patientIDEntry = tk.Entry(self.top, textvariable=self.patientID)
+        self.userNameEntry = tk.Entry(self.top, textvariable=self.userName)
+        self.patientIDEntry.grid(row=0, column=2, padx=10, pady=10)
+        self.userNameEntry.grid(row=0, column=5, padx=10, pady=10)
+        
+        self.middle = ttk.Frame(width=200)
+        self.middle.pack(fill="y")
+        self.patientNotes = tk.Text(self.middle)
+        self.patientNotes.pack(padx=10, pady=10)
+        
+        self.pbFrame = ttk.Frame()
+        self.currentFile = tk.StringVar()
+        self.currentFileLabel = ttk.Label(self.pbFrame, textvariable=self.currentFile)
+        self.currentFileLabel.pack()
+        self.pb = ttk.Progressbar(self.pbFrame, mode='determinate')
+        self.pb.pack()
+        self.fileNames = tk.StringVar()
+        self.fileNamesLabel = ttk.Label(self.pbFrame, textvariable=self.fileNames)
+        self.fileNamesLabel.pack()
+        self.pbFrame.pack()
+        
+        self.bottom = ttk.Frame()
+        self.bottom.pack(side='bottom', fill="x")
+        self.status = tk.StringVar()
+        self.statusLabel = ttk.Label(self.bottom, text="", border=1, relief="sunken", textvariable=self.status, justify=tk.LEFT)
+        self.statusLabel.configure(background="gray", relief="sunken")
+        self.statusLabel.pack(side="bottom", fill="x", padx=2, pady=2)
+        
+        self.buttons = ttk.Frame()
+        self.goButton = ttk.Button(self.buttons, text="Upload", command=self.go)
+        self.goButton.pack(side="left")
+        self.pb.pack()
+        self.quitButton = ttk.Button(self.buttons, text="Quit", command=self.quit)
+        self.quitButton.pack(side="right")
+        self.buttons.pack(side="bottom", fill="x", padx=10, pady=10)
+        
         self.pause = False
-        self.parent.lift()
-        self.parent.bind("<FocusOut>", self.saveAppConf)
-
-    def saveAppConf(self, event=None):
-        appConf['geometry'] = self.parent.geometry()
-        appConf['patientID'] = self.patientID.get()
-        appConf['userName'] = self.userName.get()
-        json.dump(appConf, file(".uploader.conf", 'wb'))
-        #log("Wrote " + json.dumps(appConf))
-        return()
-    
-    
+        self.root.bind("<FocusOut>", self.saveAppConf)
+        
     def quit(self):
         #If the quit button's text has been changed to pause.
         if self.quitButton['text'] == "Pause":
@@ -131,11 +138,19 @@ class Main(Frame):
             self.saveAppConf()
             log("Quitting")
             sys.exit(0)
-    
+
     def set_filenames(self):
         self.fileNames.set("Files to upload\n=========\n\n" + "\n".join(self.fileGlob))
-        self.parent.update()
-        
+        self.root.update()
+
+    def saveAppConf(self, event=None):
+        appConf['geometry'] = self.root.geometry()
+        appConf['patientID'] = self.patientID.get()
+        appConf['userName'] = self.userName.get()
+        json.dump(appConf, file(".uploader.conf", 'wb'))
+        #log("Wrote " + json.dumps(appConf))
+        return()
+    
     def go(self):
         self.saveAppConf()
         if self.patientID.get() == "":
@@ -143,7 +158,7 @@ class Main(Frame):
             return
         self.quitButton['text'] = "Pause"
         self.goButton['state'] = "disabled"
-        self.parent.update()
+        self.root.update()
         folder = "{0}".format(self.patientID.get())
         num = len(self.fileGlob)
         count = 1
@@ -157,7 +172,7 @@ class Main(Frame):
             nChunks = int(math.ceil(length / float(chunkSize)))
             #Check to see if this file can be resumed.
             self.status.set("Checking for resume information.")
-            self.parent.update()
+            self.root.update()
             files = {}
             files['file'] = eegFile.name
             files['chunkSize'] = str(chunkSize)
@@ -175,10 +190,10 @@ class Main(Frame):
             else:
                 log("Resuming upload for {0}".format(eegFile.name))
             self.status.set("Uploading {0}".format(eegFile.name))
-            self.parent.update()
+            self.root.update()
             if verifyLength != length:
                 self.pb['value'] = 0
-                self.parent.update()
+                self.root.update()
                 count = 0
                 for chunk in chunks(eegFile):
                     if not self.pause:
@@ -190,7 +205,10 @@ class Main(Frame):
                             files['filename'] = eegFile.name
                             files['folder'] = folder
                             files['count'] = str(count)
-                            req = requests.post(url, files=files)
+                            with Catch(self):
+                                #if this fails, the Catch will re-enable
+                                #Quit button
+                                req = requests.post(url, files=files)
                             try:
                                 result = json.loads(req.text)
                             except:
@@ -200,17 +218,20 @@ class Main(Frame):
                         self.pb['value'] = (float(count) / nChunks) * 100
                         print((count / nChunks) * 100)
                         count += 1
-                        self.parent.update()
+                        self.root.update()
                     else:
                         self.goButton['state'] = "enabled"
                         self.pause = False
+                        self.quitButton['text'] = "Quit"
                         return
+                
             else:
                 #Skip this entire file.
                 self.pb['value'] = 100
-                self.parent.update()
+                self.root.update()
             self.status.set('Verifying...')
-            self.parent.update()
+            self.root.update()
+            eegFile.seek(0)
             fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
             eegFile.seek(0)
             files = {}
@@ -219,6 +240,12 @@ class Main(Frame):
             req = requests.post(verifyurl, files=files)
             if json.loads(req.text)['verified']:
                 log("Verified upload of {0}".format(eegFile.name))
+            else:
+                log("Verification of {0} failed!".format(eegFile.name))
+                self.status.set("Verification of {0} failed!".format(eegFile.name))
+                self.quitButton['text'] = "Quit"
+                self.goButton['text'] = "Done"
+                return
             #open_req(req)
                 
             #Remove this filename from the list of filenames 
@@ -229,10 +256,13 @@ class Main(Frame):
         self.goButton['text'] = "Done"
         self.status.set("All files uploaded. Press Quit to exit.")
         self.goButton['command'] = self.quit
-        self.parent.update()
-            
-        
-if __name__ == '__main__':
+        self.root.update()
+    
+    
+
+
+if __name__ == "__main__":
+
     #Set the current working directory to that of the executable.
     cwd = os.path.dirname(sys.argv[0])
     #If the executable is bundled, we might have to go up a level.
@@ -247,13 +277,19 @@ if __name__ == '__main__':
         appConf = json.load(open('.uploader.conf'))
     except IOError:
         appConf = {}
-    root = Tk()
-    ex = Main(root)
-    root.geometry(appConf.get("geometry", "390x450+100+100"))
-    ex.fileGlob = glob.glob("*.txt")
-    ex.set_filenames()
-    ex.patientID.set(appConf.get("patientID", ""))
-    ex.userName.set(appConf.get("userName", ""))
+    root = tk.Tk()
+    root.configure(background = "#eaeaea")
+    root.resizable(width=0, height=1)
+    main= Main(root)
+    root.geometry(appConf.get("geometry", "589x626+5+27"))
+    root.title("Neurovigil Uploader")
+    main.fileGlob = glob.glob("*.txt")
+    main.set_filenames()
+    main.patientID.set(appConf.get("patientID", ""))
+    main.userName.set(appConf.get("userName", ""))
     root.lift()
+    if len(sys.argv) > 1:
+        debug()
     root.mainloop()  
-    log( ex.patientID.get())
+    log( main.patientID.get())
+
