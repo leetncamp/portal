@@ -47,6 +47,15 @@ def log(txt):
 log("========================")
 log(now())
 
+class RequestPost(self, url, files):
+    def __init__(self, main, req):
+        self.url = url
+        self.files = files
+    def __enter__(self):
+        return requests.post(self.url, self.files)
+    def __exit__(self, type, value, traceback):
+        self.quitButton['text'] = "Quit"
+
 def open_req(req):
     file('delme.html', "wb").write(req.text)
     os.system("open delme.html")
@@ -65,7 +74,7 @@ class Main(Frame):
         Frame.__init__(self, parent)   
         self.parent = parent
         self.parent.title("Neurovigil Uploader")
-        self.style = Style()
+
         self.patientID = StringVar()
         self.patientLabel = Label(self, text="Patient ID")
         self.patientLabel.place(x=10, y=10)
@@ -93,9 +102,11 @@ class Main(Frame):
         self.goButton.place(x=10, y = 400)
         self.quitButton = Button(self, text="Quit", command=self.quit)
         self.quitButton.place(x=290, y=400)
+        self.statusFrame = Frame(self)
         self.status = StringVar()
-        self.statusLabel = Label(self, text="", border=1, relief="sunken", anchor="w", textvariable=self.status)
+        self.statusLabel = Label(self.statusFrame, text="", border=1, relief="sunken", anchor="w", textvariable=self.status)
         self.statusLabel.pack(side="bottom", fill="x")
+        self.test=Button(self.statusFrame, text="test").pack()
         self.pause = False
         self.parent.lift()
         self.parent.bind("<FocusOut>", self.saveAppConf)
@@ -105,11 +116,9 @@ class Main(Frame):
         appConf['patientID'] = self.patientID.get()
         appConf['userName'] = self.userName.get()
         json.dump(appConf, file(".uploader.conf", 'wb'))
-        log("Wrote " + json.dumps(appConf))
+        #log("Wrote " + json.dumps(appConf))
         return()
     
-    def widgetLeave(self, event):
-        pass
     
     def quit(self):
         #If the quit button's text has been changed to pause.
