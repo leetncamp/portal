@@ -95,8 +95,8 @@ class Main(ttk.Frame):
         
         self.middle = ttk.Frame(width=200)
         self.middle.pack(fill="y")
-        self.patientNotes = tk.Text(self.middle)
-        self.patientNotes.pack(padx=10, pady=10)
+        self.patientNotesText = tk.Text(self.middle, height=10)
+        self.patientNotesText.pack(padx=10, pady=10)
         
         self.pbFrame = ttk.Frame()
         self.currentFile = tk.StringVar()
@@ -147,19 +147,19 @@ class Main(ttk.Frame):
         appConf['geometry'] = self.root.geometry()
         appConf['patientID'] = self.patientID.get()
         appConf['userName'] = self.userName.get()
-        json.dump(appConf, file(".uploader.conf", 'wb'))
-        #log("Wrote " + json.dumps(appConf))
+        appConf['patientNotes'] = self.patientNotesText.get(0.0, tk.END)
+        json.dump(appConf, file(".metadata.json", 'wb'))
+        log("Wrote " + json.dumps(appConf))
         return()
     
     def go(self):
         self.saveAppConf()
-        if self.patientID.get() == "":
-            tkMessageBox.showwarning("Required information is missing", "Patient Name is required.")
+        if self.patientID.get() == "" or sel.userName.get() == "":
+            tkMessageBox.showwarning("Required information is missing", "Patient Name and Patient ID are required.")
             return
         self.quitButton['text'] = "Pause"
         self.goButton['state'] = "disabled"
         self.root.update()
-        folder = "{0}".format(self.patientID.get())
         num = len(self.fileGlob)
         count = 1
         for fn in self.fileGlob:
@@ -171,11 +171,13 @@ class Main(ttk.Frame):
             eegFile.seek(0)
             nChunks = int(math.ceil(length / float(chunkSize)))
             #Check to see if this file can be resumed.
+            #And send the metada for this file.
             self.status.set("Checking for resume information.")
             self.root.update()
             files = {}
             files['file'] = eegFile.name
             files['chunkSize'] = str(chunkSize)
+            files['metadata'] = json.dumps(appConf)
             req = requests.post(verifyurl, files=files)
             #open_req(req)
             try:
@@ -203,7 +205,7 @@ class Main(ttk.Frame):
                         if md5sum != manifestMD5sum:
                             files = {'file': ('fullChunk', chunk ), 'md5sum': ('md5sum', md5sum)}
                             files['filename'] = eegFile.name
-                            files['folder'] = folder
+                            files['metadata'] = json.dumps(appConf)
                             files['count'] = str(count)
                             with Catch(self):
                                 #if this fails, the Catch will re-enable
@@ -274,19 +276,21 @@ if __name__ == "__main__":
     #And any possible information about resuming an existing upload.
 
     try:
-        appConf = json.load(open('.uploader.conf'))
+        appConf = json.load(open('.metadata.json'))
     except IOError:
         appConf = {}
     root = tk.Tk()
     root.configure(background = "#eaeaea")
     root.resizable(width=0, height=1)
     main= Main(root)
-    root.geometry(appConf.get("geometry", "589x626+5+27"))
+    root.geometry(appConf.get("geometry", "589x461+30+45"))
     root.title("Neurovigil Uploader")
     main.fileGlob = glob.glob("*.txt")
     main.set_filenames()
     main.patientID.set(appConf.get("patientID", ""))
     main.userName.set(appConf.get("userName", ""))
+    main.patientNotesText.delete(1.0, tk.END)
+    main.patientNotesText.insert(tk.END, appConf.get("patientNotes").strip(), "")
     root.lift()
     if len(sys.argv) > 1:
         debug()

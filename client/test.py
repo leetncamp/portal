@@ -95,8 +95,10 @@ class Main(ttk.Frame):
         
         self.middle = ttk.Frame(width=200)
         self.middle.pack(fill="y")
-        self.patientNotes = tk.Text(self.middle)
-        self.patientNotes.pack(padx=10, pady=10)
+        self.patientNotes = tk.StringVar()
+        self.patientNotesText = ttk.Text(self.middle, textvariable=self.patientNotes)
+        self.patientNotesText.pack(padx=10, pady=10)
+        debug()
         
         self.pbFrame = ttk.Frame()
         self.currentFile = tk.StringVar()
@@ -125,7 +127,7 @@ class Main(ttk.Frame):
         self.buttons.pack(side="bottom", fill="x", padx=10, pady=10)
         
         self.pause = False
-        self.root.bind("<FocusOut>", self.saveAppConf)
+        self.root.bind("<FocusOut>", self.saveMetaData)
         
     def quit(self):
         #If the quit button's text has been changed to pause.
@@ -135,7 +137,7 @@ class Main(ttk.Frame):
         else:
             #Refresh the conf file before exiting.
             #store the current window position
-            self.saveAppConf()
+            self.saveMetaData()
             log("Quitting")
             sys.exit(0)
 
@@ -143,16 +145,17 @@ class Main(ttk.Frame):
         self.fileNames.set("Files to upload\n=========\n\n" + "\n".join(self.fileGlob))
         self.root.update()
 
-    def saveAppConf(self, event=None):
+    def saveMetaData(self, event=None):
         appConf['geometry'] = self.root.geometry()
         appConf['patientID'] = self.patientID.get()
         appConf['userName'] = self.userName.get()
+        debug()
         json.dump(appConf, file(".uploader.conf", 'wb'))
-        #log("Wrote " + json.dumps(appConf))
+        log("Wrote " + json.dumps(appConf))
         return()
     
     def go(self):
-        self.saveAppConf()
+        self.saveMetaData()
         if self.patientID.get() == "":
             tkMessageBox.showwarning("Required information is missing", "Patient Name is required.")
             return
