@@ -28,7 +28,7 @@ import traceback as tb
 mytz = get_localzone()
 
 chunkSize = 1000000
-server = nevis.dhcp.snl.salk.edu
+server = "nevis.dhcp.snl.salk.edu"
 url = "http://{0}:8000/bupload".format(server)
 verifyurl = "http://{0}:8000/verifyfile".format(server)
 globRE = re.compile("eeg", re.I)
