@@ -15,13 +15,17 @@ import math
 import requests
 import re
 import json
+import pickle
 import zlib
 import hashlib
 import tkMessageBox
 import datetime
 import pytz
-mytz=pytz.timezone("America/Los_Angeles")
+import dateutil
+from tzlocal import get_localzone
 import traceback as tb
+
+mytz = get_localzone()
 
 chunkSize = 1000000
 url = "http://localhost:8000/bupload"
@@ -29,7 +33,7 @@ verifyurl = "http://localhost:8000/verifyfile"
 globRE = re.compile("eeg", re.I)
 
 def now():
-    return(datetime.datetime.utcnow().replace(tzinfo=pytz.utc))
+    return(datetime.datetime.utcnow().replace(tzinfo=mytz))
 
 
 logfile = file("upload.log", 'a')
@@ -150,6 +154,9 @@ class Main(ttk.Frame):
         appMeta['patientID'] = self.patientID.get()
         appMeta['userName'] = self.userName.get()
         appMeta['patientNotes'] = self.patientNotesText.get(0.0, tk.END)
+        appMeta['localtimepickle'] = pickle.dumps(now)
+        appMeta['localtimeString'] = str(now())
+        
         json.dump(appMeta, file(".metadata.json", 'wb'))
         #log("Wrote " + json.dumps(appMeta))
         return()
@@ -164,7 +171,7 @@ class Main(ttk.Frame):
         self.root.update()
         num = len(self.fileGlob)
         count = 1
-        for fn in self.fileGlob:
+        for fn in self.fileList:
             #Check for a progress indicator
             self.currentFile.set(fn)
             eegFile = open(fn, 'rb')
@@ -179,6 +186,14 @@ class Main(ttk.Frame):
             files = {}
             files['file'] = eegFile.name
             files['chunkSize'] = str(chunkSize)
+            (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(eegFile.name)
+            Ctime = datetime.datetime.fromtimestamp(ctime).replace(tzinfo=mytz)
+            Mtime = datetime.datetime.fromtimestamp(mtime).replace(tzinfo=mytz)
+            appMeta['eegFileCreateDate'] = str(Ctime)
+            appMeta['eegFileCreateDatePickle'] = pickle.dumps(Ctime)
+            appMeta['eegFileModificationDate'] = str(Mtime)
+            appMeta['eegFileModificationDatePickle'] = pickle.dumps(Mtime)
+            appMeta['now'] = pickle.dumps(now())
             files['metadata'] = json.dumps(appMeta)
             req = requests.post(verifyurl, files=files)
             #open_req(req)
@@ -290,6 +305,7 @@ if __name__ == "__main__":
     root.geometry(appMeta.get("geometry", "589x461+30+45"))
     root.title("Neurovigil Uploader")
     main.fileGlob = [x for x in os.listdir(cwd) if re.match(globRE, x) ]
+    main.fileList = [x for x in main.fileGlob]
     main.set_filenames()
     main.patientID.set(appMeta.get("patientID", ""))
     main.userName.set(appMeta.get("userName", ""))

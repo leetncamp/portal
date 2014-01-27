@@ -3,6 +3,7 @@
 # import the django settings
 from django.conf import settings
 import json
+import pickle
 from django.template import Context, loader
 from django.core.context_processors import csrf
 from django.views.decorators.csrf import csrf_exempt
