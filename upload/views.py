@@ -140,7 +140,8 @@ def Upload(request):
             "video/mp4",
             "video/mpeg",
             "application/x-tar",
-            "application/octet-stream", #This allows any binary file to be uploaded.  Be careful.
+            "application/octet-stream", 
+            #This allows any binary file to be uploaded.  Be careful.
             "application/msword",
             "application/vnd.ms-excel",
             "application/vnd.ms-powerpoint",            
@@ -245,7 +246,6 @@ def Upload(request):
             print("Closing file")
             destination.close()
             ufile.close()
-            print("Writing metadata")
             meta = {"username":str(request.user.username)}
             browser = request.META.get("HTTP_USER_AGENT")
             meta['browser'] = browser.split()[-1]
@@ -407,13 +407,25 @@ def verifyfile(request):
     
     request._load_post_and_files()
     filename = safe_filename(request._files['file'].read())
-    filepath = os.path.join(upload_dir, filename)
+    metaStr = request._files['metadata'].read()
+    appMeta = json.loads(metaStr)
+    #Store data in folders based on userName 
+    folder = appMeta.get("userName")
+    working_folder = os.path.join(upload_dir, folder)
+    try:
+        os.makedirs(working_folder)
+    except OSError:
+        pass
+    filepath = os.path.join(working_folder, filename)
+    metapath = filepath + ".metadata.json"
     try:
         fullMD5 = request._files['fullMD5'].read()
         #If fullMD5 exists, assume you just want the 
         #md5sum of the entire eeg file.
         FULLMD5 = hashlib.md5(open(filepath, 'rb').read()).hexdigest()
         data = {"verified": FULLMD5 == fullMD5}
+        #Write the metadata out here as we verfiy the entire file.
+        file(metapath, 'wb').write(metaStr)
         return HttpResponse(json.dumps(data), mimetype='application/json')
     except KeyError:
         pass
@@ -446,14 +458,23 @@ def verifyfile(request):
 def bUpload(request):
     request._load_post_and_files()
     filename = safe_filename(request._files['filename'].read())
-    filepath = os.path.join(upload_dir, filename)
+    metaStr = request._files['metadata'].read()
+    appMeta = json.loads(metaStr)
+    #Store data in folders based on userName 
+    folder = appMeta.get("userName")
+    working_folder = os.path.join(upload_dir, folder)
+    try:
+        os.makedirs(working_folder)
+    except OSError:
+        pass
+    filepath = os.path.join(working_folder, filename)
     count = request._files['count'].read()
     if count == "0":
         try:
             os.remove(filepath)
         except OSError:
             pass
-    metapath = filepath + ".meta.txt"
+    
     chunk = request._files['file'].read()
     md5SUM = request._files['md5sum'].read()
     md5sum = hashlib.md5(chunk).hexdigest()

@@ -13,6 +13,7 @@ import os
 import sys
 import math
 import requests
+import re
 import json
 import zlib
 import hashlib
@@ -25,6 +26,7 @@ import traceback as tb
 chunkSize = 1000000
 url = "http://localhost:8000/bupload"
 verifyurl = "http://localhost:8000/verifyfile"
+globRE = re.compile("eeg", re.I)
 
 def now():
     return(datetime.datetime.utcnow().replace(tzinfo=pytz.utc))
@@ -125,7 +127,7 @@ class Main(ttk.Frame):
         self.buttons.pack(side="bottom", fill="x", padx=10, pady=10)
         
         self.pause = False
-        self.root.bind("<FocusOut>", self.saveAppConf)
+        self.root.bind("<FocusOut>", self.saveMetaData)
         
     def quit(self):
         #If the quit button's text has been changed to pause.
@@ -135,7 +137,7 @@ class Main(ttk.Frame):
         else:
             #Refresh the conf file before exiting.
             #store the current window position
-            self.saveAppConf()
+            self.saveMetaData()
             log("Quitting")
             sys.exit(0)
 
@@ -143,18 +145,18 @@ class Main(ttk.Frame):
         self.fileNames.set("Files to upload\n=========\n\n" + "\n".join(self.fileGlob))
         self.root.update()
 
-    def saveAppConf(self, event=None):
-        appConf['geometry'] = self.root.geometry()
-        appConf['patientID'] = self.patientID.get()
-        appConf['userName'] = self.userName.get()
-        appConf['patientNotes'] = self.patientNotesText.get(0.0, tk.END)
-        json.dump(appConf, file(".metadata.json", 'wb'))
-        log("Wrote " + json.dumps(appConf))
+    def saveMetaData(self, event=None):
+        appMeta['geometry'] = self.root.geometry()
+        appMeta['patientID'] = self.patientID.get()
+        appMeta['userName'] = self.userName.get()
+        appMeta['patientNotes'] = self.patientNotesText.get(0.0, tk.END)
+        json.dump(appMeta, file(".metadata.json", 'wb'))
+        #log("Wrote " + json.dumps(appMeta))
         return()
     
     def go(self):
-        self.saveAppConf()
-        if self.patientID.get() == "" or sel.userName.get() == "":
+        self.saveMetaData()
+        if self.patientID.get() == "" or self.userName.get() == "":
             tkMessageBox.showwarning("Required information is missing", "Patient Name and Patient ID are required.")
             return
         self.quitButton['text'] = "Pause"
@@ -172,12 +174,12 @@ class Main(ttk.Frame):
             nChunks = int(math.ceil(length / float(chunkSize)))
             #Check to see if this file can be resumed.
             #And send the metada for this file.
-            self.status.set("Checking for resume information.")
+            self.status.set("Checking for resume information. May take several minutes...")
             self.root.update()
             files = {}
             files['file'] = eegFile.name
             files['chunkSize'] = str(chunkSize)
-            files['metadata'] = json.dumps(appConf)
+            files['metadata'] = json.dumps(appMeta)
             req = requests.post(verifyurl, files=files)
             #open_req(req)
             try:
@@ -205,7 +207,8 @@ class Main(ttk.Frame):
                         if md5sum != manifestMD5sum:
                             files = {'file': ('fullChunk', chunk ), 'md5sum': ('md5sum', md5sum)}
                             files['filename'] = eegFile.name
-                            files['metadata'] = json.dumps(appConf)
+                            files['chunkSize'] = str(chunkSize)
+                            files['metadata'] = json.dumps(appMeta)
                             files['count'] = str(count)
                             with Catch(self):
                                 #if this fails, the Catch will re-enable
@@ -231,13 +234,14 @@ class Main(ttk.Frame):
                 #Skip this entire file.
                 self.pb['value'] = 100
                 self.root.update()
-            self.status.set('Verifying...')
+            self.status.set('Verifying ...')
             self.root.update()
             eegFile.seek(0)
             fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
             eegFile.seek(0)
             files = {}
             files['file'] = eegFile.name
+            files['metadata'] = json.dumps(appMeta)
             files['fullMD5'] = fullMD5
             req = requests.post(verifyurl, files=files)
             if json.loads(req.text)['verified']:
@@ -276,21 +280,21 @@ if __name__ == "__main__":
     #And any possible information about resuming an existing upload.
 
     try:
-        appConf = json.load(open('.metadata.json'))
+        appMeta = json.load(open('.metadata.json'))
     except IOError:
-        appConf = {}
+        appMeta = {}
     root = tk.Tk()
     root.configure(background = "#eaeaea")
     root.resizable(width=0, height=1)
     main= Main(root)
-    root.geometry(appConf.get("geometry", "589x461+30+45"))
+    root.geometry(appMeta.get("geometry", "589x461+30+45"))
     root.title("Neurovigil Uploader")
-    main.fileGlob = glob.glob("*.txt")
+    main.fileGlob = [x for x in os.listdir(cwd) if re.match(globRE, x) ]
     main.set_filenames()
-    main.patientID.set(appConf.get("patientID", ""))
-    main.userName.set(appConf.get("userName", ""))
+    main.patientID.set(appMeta.get("patientID", ""))
+    main.userName.set(appMeta.get("userName", ""))
     main.patientNotesText.delete(1.0, tk.END)
-    main.patientNotesText.insert(tk.END, appConf.get("patientNotes").strip(), "")
+    main.patientNotesText.insert(tk.END, appMeta.get("patientNotes").strip(), "")
     root.lift()
     if len(sys.argv) > 1:
         debug()
