@@ -18,7 +18,7 @@ import zlib
 import uuid
 from django.contrib.auth.decorators import login_required
 import hashlib
-
+import traceback
 import subprocess
 from snlmailer import Message
 
@@ -405,71 +405,75 @@ def verifyfile(request):
     """The client sends information about a file and the
     server responds with a chunks manifest if there is
     an eeg file avaiable on this end."""
-    
-    request._load_post_and_files()
-    filename = safe_filename(request._files['file'].read())
-    metaStr = request._files['metadata'].read()
-    appMeta = json.loads(metaStr)
-    #Store data in folders based on userName 
-    folder = appMeta.get("userName")
-    working_folder = os.path.join(upload_dir, folder)
     try:
-        os.makedirs(working_folder)
-    except OSError:
-        pass
+        request._load_post_and_files()
+        filename = safe_filename(request._files['file'].read())
+        metaStr = request._files['metadata'].read()
+        appMeta = json.loads(metaStr)
+        #Store data in folders based on userName 
+        folder = appMeta.get("userName")
+        working_folder = os.path.join(upload_dir, folder)
+        try:
+            os.makedirs(working_folder)
+        except OSError:
+            pass
     
-    #AFter all files have been uploaded, we send an error blob.
-    #Check for that. If present, write it out and return.
+        #AFter all files have been uploaded, we send an error blob.
+        #Check for that. If present, write it out and return.
     
-    try:
-        errors = request._files['errors'].read()
-        if len(errors) > 0:
-            errFile = file(os.path.join(working_folder, "errors.txt"), "wb").write(errors)
-            return HttpResponse(json.dumps({"status":"errors-saved"}), mimetype='application/json')
-    except Exception as e:
-        pass
+        try:
+            errors = request._files['errors'].read()
+            if len(errors) > 0:
+                errFile = file(os.path.join(working_folder, "errors.txt"), "wb").write(errors)
+                return HttpResponse(json.dumps({"status":"errors-saved"}), mimetype='application/json')
+            
+        except Exception as e:
+            pass
     
     
     
-    filepath = os.path.join(working_folder, filename)
-    metapath = filepath + ".metadata.json"
-    try:
-        fullMD5 = request._files['fullMD5'].read()
-        #If fullMD5 exists, assume you just want the 
-        #md5sum of the entire eeg file.
-        FULLMD5 = hashlib.md5(open(filepath, 'rb').read()).hexdigest()
-        data = {"verified": FULLMD5 == fullMD5}
-        #Write the metadata out here as we verfiy the entire file.
-        file(metapath, 'wb').write(metaStr)
+        filepath = os.path.join(working_folder, filename)
+        metapath = filepath + ".metadata.json"
+        try:
+            fullMD5 = request._files['fullMD5'].read()
+            #If fullMD5 exists, assume you just want the 
+            #md5sum of the entire eeg file.
+            FULLMD5 = hashlib.md5(open(filepath, 'rb').read()).hexdigest()
+            data = {"verified": FULLMD5 == fullMD5}
+            #Write the metadata out here as we verfiy the entire file.
+            file(metapath, 'wb').write(metaStr)
+            return HttpResponse(json.dumps(data), mimetype='application/json')
+        except Exception as e:
+            if "MultiValueDict" in str(e):
+                pass
+            else:
+                return HttpResponse(json.dumps({"verified":False}), mimetype='application/json')
+        chunkSize = int(request._files['chunkSize'].read())
+        conf = {}
+        length = 0
+        count = 0
+        try:
+            eegFile = open(filepath, "rb")
+            eegFile.seek(0, 2)
+            length = eegFile.tell()
+            eegFile.seek(0)
+            fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
+            eegFile.seek(0)
+            eegFile.seek(0)
+            try:
+                for chunk in chunks(eegFile):
+                    conf[count] = hashlib.md5(chunk).hexdigest()
+                    count += 1
+            except Exception as e:
+                debug()
+        except IOError:
+            pass
+
+        data = {"conf":conf, "length":length}
         return HttpResponse(json.dumps(data), mimetype='application/json')
     except Exception as e:
-        if "MultiValueDict" in str(e):
-            pass
-        else:
-            return HttpResponse(json.dumps({"verified":False}), mimetype='application/json')
-    chunkSize = int(request._files['chunkSize'].read())
-    conf = {}
-    length = 0
-    count = 0
-    try:
-        eegFile = open(filepath, "rb")
-        eegFile.seek(0, 2)
-        length = eegFile.tell()
-        eegFile.seek(0)
-        fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
-        eegFile.seek(0)
-        eegFile.seek(0)
-        try:
-            for chunk in chunks(eegFile):
-                conf[count] = hashlib.md5(chunk).hexdigest()
-                count += 1
-        except Exception as e:
-            debug()
-    except IOError:
-        pass
-
-    data = {"conf":conf, "length":length}
-    return HttpResponse(json.dumps(data), mimetype='application/json')
+        print traceback.format_exc(e)
+        debug()
 
 
 @csrf_exempt
