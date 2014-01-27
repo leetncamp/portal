@@ -51,7 +51,7 @@ def log(txt):
 
 log("========================")
 log(now())
-
+log(cwd)
 def open_req(req):
     file('delme.html', "wb").write(req.text)
     os.system("open delme.html")
