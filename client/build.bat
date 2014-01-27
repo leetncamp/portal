@@ -1,5 +1,6 @@
-del NVUploader.exe
-copy NVUploader.py pyinstaller
+# run this in the git bash shell
+rm -rf NVUploader
 cd pyinstaller
-c:\Python27\python.exe pyinstaller.py --onefile --windowed NVUploader.py
-move NVUploader\dist\NVUploader.exe ..
+rm -rf build dist NVUploader
+python pyinstaller.py --windowed "..\NVUploader.py"
+move NVUploader\dist\NVUploader ..
