@@ -32,6 +32,7 @@ server = "nevis.dhcp.snl.salk.edu"
 url = "http://{0}:8000/bupload".format(server)
 verifyurl = "http://{0}:8000/verifyfile".format(server)
 globRE = re.compile("eeg", re.I)
+errors =  ""
 
 def now():
     return(datetime.datetime.utcnow().replace(tzinfo=mytz))
@@ -68,19 +69,22 @@ def chunks(fileObj):
 
 class Catch():
     def __init__(self, instance):
-
         self.instance = instance
     def __enter__(self):
         return self.instance
     def __exit__(self, type, value, traceback):
         if type != None:
+            global errors
             self.instance.quitButton['text'] = "Quit"
             log("Caught exception. Enabling the Quit and Upload buttons.")
             self.instance.goButton['state'] = 'enabled'
             self.instance.status.set("Problem uploading. You may press Upload again to retry.")
             log(type)
+            errors += str(type) + "\n"
             log(value)
+            errors += str(value) + "\n"
             log(tb.format_exc(traceback))
+            errors += str(value) + "\n"
 
 
 class Main(ttk.Frame):
@@ -172,6 +176,7 @@ class Main(ttk.Frame):
         return()
     
     def go(self):
+        global errors
         self.saveMetaData()
         if self.patientID.get() == "" or self.userName.get() == "":
             tkMessageBox.showwarning("Required information is missing", "Patient Name and Patient ID are required.")
@@ -187,6 +192,10 @@ class Main(ttk.Frame):
             eegFile = open(fn, 'rb')
             eegFile.seek(0, 2)
             length = eegFile.tell()
+            if length == 0:
+                #If the file is empty, it will appear as unverified. Skip it.
+                errors += "{0} is empty. Skipping.\n".format(eegFile.name)
+                break
             eegFile.seek(0)
             nChunks = int(math.ceil(length / float(chunkSize)))
             #Check to see if this file can be resumed.
@@ -211,6 +220,7 @@ class Main(ttk.Frame):
             try:
                 verifyResult = json.loads(req.text)
             except ValueError:
+                errors += req.text + "\n\n"
                 open_req(req)
             verifyLength = verifyResult['length']
             chunkManifest = verifyResult['conf']
@@ -244,6 +254,7 @@ class Main(ttk.Frame):
                                 result = json.loads(req.text)
                             except:
                                 open_req(req)
+                                errors += req.text + "\n\n"
                         else:
                             log("Skipping chunk {0}".format(count))
                         self.pb['value'] = (float(count) / nChunks) * 100
@@ -285,6 +296,14 @@ class Main(ttk.Frame):
             self.set_filenames()
         self.quitButton['text'] = "Quit"
         self.goButton['text'] = "Done"
+        #Upload the errors text thing.
+        files = {'errors': ('errors', errors )}
+        files['file'] = "errors.txt"
+        files['metadata'] = json.dumps(appMeta)
+        with Catch(self):
+            req = requests.post(verifyurl, files=files)
+        if len(errors) > 0:
+            tkMessageBox.showwarning("ALERT", errors)
         self.status.set("All files uploaded. Press Quit to exit.")
         self.goButton['command'] = self.quit
         self.root.update()

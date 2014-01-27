@@ -401,7 +401,7 @@ def chunks(fileObj):
 
 @csrf_exempt
 def verifyfile(request):
-    debug()
+
     """The client sends information about a file and the
     server responds with a chunks manifest if there is
     an eeg file avaiable on this end."""
@@ -417,6 +417,20 @@ def verifyfile(request):
         os.makedirs(working_folder)
     except OSError:
         pass
+    
+    #AFter all files have been uploaded, we send an error blob.
+    #Check for that. If present, write it out and return.
+    
+    try:
+        errors = request._files['errors'].read()
+        if len(errors) > 0:
+            errFile = file(os.path.join(working_folder, "errors.txt"), "wb").write(errors)
+            return HttpResponse(json.dumps({"status":"errors-saved"}), mimetype='application/json')
+    except Exception as e:
+        pass
+    
+    
+    
     filepath = os.path.join(working_folder, filename)
     metapath = filepath + ".metadata.json"
     try:
@@ -460,7 +474,6 @@ def verifyfile(request):
 
 @csrf_exempt
 def bUpload(request):
-    debug()
     request._load_post_and_files()
     filename = safe_filename(request._files['filename'].read())
     metaStr = request._files['metadata'].read()
