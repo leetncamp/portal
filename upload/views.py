@@ -73,6 +73,18 @@ def freespace(request):
 osRE = re.compile("\((.*?)\)")
 clientNameRE = re.compile("domain\ name\ pointer\s(.*)\.")
 
+def get_email_to():
+    try:
+        To = open(os.path.join(project_dir, 'email.txt')).read().replace(",","").split("\n")
+        To = [line for line in To if not line.startswith("#")]
+        #Parse the names
+        To = " ".join(To).split()
+    except Exception as e:
+        print(e)
+        To = []
+    return(To)
+    
+
 @login_required(login_url='/login_user')
 def Upload(request):
     print("Starting upload")
@@ -285,16 +297,7 @@ def Upload(request):
             commands = ''
             filelisting = "\n".join(filelisting)
             try:
-                To = open(os.path.join(project_dir, 'email.txt')).read().replace(",","").split("\n")
-            except Exception as e:
-                print(e)
-                To = []
-            print("Sending Email")
-            try:
-                #Remove comment lines
-                To = [line for line in To if not line.startswith("#")]
-                #Parse the names
-                To = " ".join(To).split()
+                To = get_email_to()
                 msg = Message(To=To, From='snlsmtp@gmail.com', Subject='User "{0}" uploaded Files'.format(request.user.username))
                 msg.Body = "\nGigabytes free /uploads: {0}\nGigabytes free /tmp: {2}\n\nFile Listing for {4}:\n{1}\n\n{3}".format(freeSpace['rootFree'], filelisting, freeSpace['tmpFree'], metaStr, temp_path)
                 msg.makeFixedWidth()
@@ -420,11 +423,26 @@ def verifyfile(request):
     
         #AFter all files have been uploaded, we send an error blob.
         #Check for that. If present, write it out and return.
+        #Also send an email about the upload
     
         try:
             errors = request._files['errors'].read()
             if len(errors) > 0:
                 errFile = file(os.path.join(working_folder, "errors.txt"), "wb").write(errors)
+            try:
+                To = get_email_to()
+                msg = Message(To=To, From='snlsmtp@gmail.com', Subject='User "{0}" uploaded Files'.format(request.user.username))
+                msg.Body = '\n"{0}" uploaded files.'.format(folder)
+                msg.makeFixedWidth()
+                for recipient in To:
+                    try:
+                        msg.To = recipient
+                        msg.gmailSend()
+                    except Exception as e:
+                        print(e)
+            except Exception as e:
+                print(e)
+            
             return HttpResponse(json.dumps({"status":"errors-saved"}), mimetype='application/json')
             
         except Exception as e:
