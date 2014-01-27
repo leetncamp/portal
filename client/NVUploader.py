@@ -20,7 +20,7 @@ else:
 from pdb import set_trace as debug
 import Tkinter as tk
 import ttk
-
+import re
 from pdb import set_trace as debug
 import glob
 import time
