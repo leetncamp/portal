@@ -6,7 +6,7 @@ import sys
 if platform.uname()[0] == "Windows":
     #psutil doesn't necessarily have permission in Windows 7. Use tasklist.
     import subprocess as sp
-    tasklist = sp.check_call("tasklist")
+    tasklist = sp.check_output("tasklist")
     if "NVUploader" in tasklist:
         sys.exit(1)
     else:
