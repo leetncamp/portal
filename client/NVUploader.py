@@ -1,10 +1,21 @@
 #!/usr/bin/env python
 from __future__ import division
-import psutil
+import platform
+import os
 import sys
-if len( [ p for p in psutil.process_iter() if "NVUploader" in p.name ] ) != 0:
-    print "Instance already running."
-    sys.exit(1)
+if platform.uname()[0] == "Windows":
+    #psutil doesn't necessarily have permission in Windows 7. Use tasklist.
+    import subprocess as sp
+    tasklist = sp.check_call("tasklist")
+    if "NVUploader" in tasklist:
+        sys.exit(1)
+    else:
+        del tasklist
+else:    
+    import psutil
+    if len( [ p for p in psutil.process_iter() if "NVUploader" in p.name ] ) != 0:
+        print "Instance already running."
+        sys.exit(1)
 
 from pdb import set_trace as debug
 import Tkinter as tk
@@ -16,7 +27,6 @@ import time
 import os
 import math
 import requests
-import re
 import json
 import pickle
 import zlib
