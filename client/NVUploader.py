@@ -3,7 +3,9 @@ from __future__ import division
 import platform
 import os
 import sys
+from pdb import set_trace as debug
 if platform.uname()[0] == "Windows":
+    debug()
     #psutil doesn't necessarily have permission in Windows 7. Use tasklist.
     import subprocess as sp
     tasklist = sp.check_output("tasklist")
@@ -17,7 +19,7 @@ else:
         print "Instance already running."
         sys.exit(1)
 
-from pdb import set_trace as debug
+
 import Tkinter as tk
 import ttk
 import re
