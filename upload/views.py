@@ -401,7 +401,7 @@ def chunks(fileObj):
 
 @csrf_exempt
 def verifyfile(request):
-
+    debug()
     """The client sends information about a file and the
     server responds with a chunks manifest if there is
     an eeg file avaiable on this end."""

@@ -301,6 +301,7 @@ class Main(ttk.Frame):
         files = {'errors': ('errors', errors )}
         files['file'] = "errors.txt"
         files['metadata'] = json.dumps(appMeta)
+        debug()
         with Catch(self):
             req = requests.post(verifyurl, files=files)
         if len(errors) > 0:
