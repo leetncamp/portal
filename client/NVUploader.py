@@ -3,16 +3,17 @@ from __future__ import division
 import platform
 import os
 import sys
+import re
+nvRE = re.compile("NVUploader", re.I)
 from pdb import set_trace as debug
 if platform.uname()[0] == "Windows":
     debug()
     #psutil doesn't necessarily have permission in Windows 7. Use tasklist.
-    import subprocess as sp
     tasklist = sp.check_output("tasklist")
-    if "NVUploader" in tasklist:
+    nvs = nvRE.findall(tasklist)
+    if len(nvs) > 1:
+        print "Instance already running"
         sys.exit(1)
-    else:
-        del tasklist
 else:    
     import psutil
     if len( [ p for p in psutil.process_iter() if "NVUploader" in p.name ] ) > 1:
