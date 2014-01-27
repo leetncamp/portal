@@ -318,7 +318,7 @@ if __name__ == "__main__":
     except IOError:
         appMeta = {}
     root = tk.Tk()
-    root.configure(background = "#e8e8e8")
+    root.configure(background = "#cccccc")
     root.resizable(width=0, height=1)
     main= Main(root)
     root.geometry(appMeta.get("geometry", "589x499+11+36"))
