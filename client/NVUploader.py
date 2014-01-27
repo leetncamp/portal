@@ -36,12 +36,18 @@ def now():
     return(datetime.datetime.utcnow().replace(tzinfo=mytz))
 
 
-logfile = file("upload.log", 'a')
-def log(txt):
+#Set the current working directory to that of the executable.
+cwd = os.path.dirname(sys.argv[0])
+#If the executable is bundled, we might have to go trim the path
+cwd = cwd.split("NVUploader")[0]
+os.chdir(cwd)
 
+logfile = file("upload.log", 'a')
+
+def log(txt):
     logfile.write("{0} : {1}\n".format(now().astimezone(mytz), txt))
     logfile.flush()
-    print txt
+    #print txt
 
 log("========================")
 log(now())
@@ -80,7 +86,6 @@ class Main(ttk.Frame):
     def __init__(self, root, *args, **kwargs):
         ttk.Frame.__init__(self, root, *args, **kwargs)
         style = ttk.Style()
-        print style.theme_use()
         #style.configure("BW.TLabel", foreground="black", background="white")
         
         self.root = root
@@ -241,7 +246,6 @@ class Main(ttk.Frame):
                         else:
                             log("Skipping chunk {0}".format(count))
                         self.pb['value'] = (float(count) / nChunks) * 100
-                        print((count / nChunks) * 100)
                         count += 1
                         self.root.update()
                     else:
@@ -288,17 +292,6 @@ class Main(ttk.Frame):
 
 
 if __name__ == "__main__":
-
-    #Set the current working directory to that of the executable.
-    cwd = os.path.dirname(sys.argv[0])
-    #If the executable is bundled, we might have to go up a level.
-    if cwd.endswith("MacOS"):
-        cwd = os.path.dirname(os.path.dirname(os.path.dirname(cwd)))
-    #file("/tmp/cwd.txt", 'w').write(cwd)
-    os.chdir(cwd)
-    #Try to read in a configuration file containing the last window position
-    #And any possible information about resuming an existing upload.
-
     try:
         appMeta = json.load(open('.metadata.json'))
     except IOError:

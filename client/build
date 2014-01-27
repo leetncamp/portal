@@ -1,4 +1,0 @@
-#!/bin/sh
-rm -rf NVUploader.app
-cd pyinstaller
-python pyinstaller.py --noconfirm --upx-dir=/usr/local/bin --windowed ../NVUploader.py; mv NVUploader/dist/NVUploader.app ~/Desktop

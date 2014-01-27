@@ -1,9 +1,0 @@
-('/Users/lee/Desktop/portal/client/pyinstaller/NV-Uploader/build/NV-Uploader/NV-Uploader',
- False,
- False,
- None,
- None,
- [],
- None,
- True,
- 1390278126)
