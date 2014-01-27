@@ -7,6 +7,7 @@ import re
 nvRE = re.compile("NVUploader", re.I)
 from pdb import set_trace as debug
 if platform.uname()[0] == "Windows":
+    import subprocess as sp
     debug()
     #psutil doesn't necessarily have permission in Windows 7. Use tasklist.
     tasklist = sp.check_output("tasklist")
