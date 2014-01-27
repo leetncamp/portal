@@ -401,7 +401,7 @@ def chunks(fileObj):
 
 @csrf_exempt
 def verifyfile(request):
-    
+    debug()
     """The client sends information about a file and the
     server responds with a chunks manifest if there is
     an eeg file avaiable on this end."""
@@ -428,8 +428,11 @@ def verifyfile(request):
         #Write the metadata out here as we verfiy the entire file.
         file(metapath, 'wb').write(metaStr)
         return HttpResponse(json.dumps(data), mimetype='application/json')
-    except KeyError:
-        pass
+    except Exception as e:
+        if "MultiValueDict" in str(e):
+            pass
+        else:
+            return HttpResponse(json.dumps({"verified":False}), mimetype='application/json')
     chunkSize = int(request._files['chunkSize'].read())
     conf = {}
     length = 0
@@ -457,6 +460,7 @@ def verifyfile(request):
 
 @csrf_exempt
 def bUpload(request):
+    debug()
     request._load_post_and_files()
     filename = safe_filename(request._files['filename'].read())
     metaStr = request._files['metadata'].read()
