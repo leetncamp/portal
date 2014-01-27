@@ -282,7 +282,7 @@ class Main(ttk.Frame):
             files['fullMD5'] = fullMD5
             req = requests.post(verifyurl, files=files)
             if json.loads(req.text)['verified']:
-                log("Verified upload of {0}".format(eegFile.name))
+                log("Verified upload of  {0}".format(eegFile.name))
             else:
                 log("Verification of {0} failed!".format(eegFile.name))
                 self.status.set("Verification of {0} failed!".format(eegFile.name))
