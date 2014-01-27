@@ -39,7 +39,7 @@ def now():
 #Set the current working directory to that of the executable.
 cwd = os.path.dirname(sys.argv[0])
 #If the executable is bundled, we might have to go trim the path
-cwd = cwd.split("NVUp")[0]
+cwd = cwd.split("NVU")[0]
 os.chdir(cwd)
 
 logfile = file("upload.log", 'a')
