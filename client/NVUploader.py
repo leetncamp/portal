@@ -100,6 +100,7 @@ class Main(ttk.Frame):
         self.userNameEntry.grid(row=0, column=5, padx=10, pady=10)
         
         self.middle = ttk.Frame(width=200)
+        ttk.Label(self.middle, text="Notes").pack()
         self.middle.pack(fill="y")
         self.patientNotesText = tk.Text(self.middle, height=10)
         self.patientNotesText.pack(padx=10, pady=10)
@@ -146,8 +147,11 @@ class Main(ttk.Frame):
             sys.exit(0)
 
     def set_filenames(self):
-        self.fileNames.set("Files to upload\n=========\n\n" + "\n".join(self.fileGlob))
+        files = [ "{0} : {1}".format(datetime.datetime.fromtimestamp(os.stat(x)[8]).strftime("%Y-%m-%d"), x) for x in self.fileGlob]
+        fileStr = "\n".join(files)
+        self.fileNames.set("                       Files to upload\n==========================\n" + fileStr)
         self.root.update()
+        return(fileStr)
 
     def saveMetaData(self, event=None):
         appMeta['geometry'] = self.root.geometry()
@@ -195,7 +199,8 @@ class Main(ttk.Frame):
             appMeta['eegFileModificationDatePickle'] = pickle.dumps(Mtime)
             appMeta['now'] = pickle.dumps(now())
             files['metadata'] = json.dumps(appMeta)
-            req = requests.post(verifyurl, files=files)
+            with Catch(self):
+                req = requests.post(verifyurl, files=files)
             #open_req(req)
             try:
                 verifyResult = json.loads(req.text)
@@ -302,15 +307,22 @@ if __name__ == "__main__":
     root.configure(background = "#eaeaea")
     root.resizable(width=0, height=1)
     main= Main(root)
-    root.geometry(appMeta.get("geometry", "589x461+30+45"))
+    root.geometry(appMeta.get("geometry", "589x499+11+36"))
     root.title("Neurovigil Uploader")
     main.fileGlob = [x for x in os.listdir(cwd) if re.match(globRE, x) ]
     main.fileList = [x for x in main.fileGlob]
     main.set_filenames()
+    main.status.set("Please note if file dates are wrong.")
     main.patientID.set(appMeta.get("patientID", ""))
     main.userName.set(appMeta.get("userName", ""))
-    main.patientNotesText.delete(1.0, tk.END)
-    main.patientNotesText.insert(tk.END, appMeta.get("patientNotes").strip(), "")
+    #main.patientNotesText.delete(1.0, tk.END)
+    existingPatientNotes = appMeta.get("patientNotes", "")
+    filedateStr = main.set_filenames()
+    if len(existingPatientNotes) < 4 and filedateStr !="":
+        existingPatientNotes = "If these dates are wrong, please correct them.\n"
+        existingPatientNotes += filedateStr
+        existingPatientNotes += "\n\nPlease add other notes below as needed.\n\n"
+    main.patientNotesText.insert(tk.END, existingPatientNotes)
     root.lift()
     if len(sys.argv) > 1:
         debug()
