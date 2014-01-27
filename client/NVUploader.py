@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 from __future__ import division
-
+import psutil
+import sys
+if len( [ p for p in psutil.process_iter() if "NVUploader" in p.name ] ) != 0:
+    print "Instance already running."
+    sys.exit(1)
 
 from pdb import set_trace as debug
 import Tkinter as tk
@@ -10,7 +14,6 @@ from pdb import set_trace as debug
 import glob
 import time
 import os
-import sys
 import math
 import requests
 import re
