@@ -13,7 +13,7 @@ if platform.uname()[0] == "Windows":
         del tasklist
 else:    
     import psutil
-    if len( [ p for p in psutil.process_iter() if "NVUploader" in p.name ] ) != 1:
+    if len( [ p for p in psutil.process_iter() if "NVUploader" in p.name ] ) > 1:
         print "Instance already running."
         sys.exit(1)
 
