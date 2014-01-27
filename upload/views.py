@@ -401,7 +401,7 @@ def chunks(fileObj):
 
 @csrf_exempt
 def verifyfile(request):
-    debug()
+    
     """The client sends information about a file and the
     server responds with a chunks manifest if there is
     an eeg file avaiable on this end."""
@@ -425,7 +425,7 @@ def verifyfile(request):
             errors = request._files['errors'].read()
             if len(errors) > 0:
                 errFile = file(os.path.join(working_folder, "errors.txt"), "wb").write(errors)
-                return HttpResponse(json.dumps({"status":"errors-saved"}), mimetype='application/json')
+            return HttpResponse(json.dumps({"status":"errors-saved"}), mimetype='application/json')
             
         except Exception as e:
             pass
@@ -473,7 +473,7 @@ def verifyfile(request):
         return HttpResponse(json.dumps(data), mimetype='application/json')
     except Exception as e:
         print traceback.format_exc(e)
-        debug()
+
 
 
 @csrf_exempt
