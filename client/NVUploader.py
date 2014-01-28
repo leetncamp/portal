@@ -245,7 +245,7 @@ class Main(ttk.Frame):
             appMeta['now'] = pickle.dumps(now())
             files['metadata'] = json.dumps(appMeta)
             with Catch(self):
-                req = requests.post(verifyurl, files=files)
+                req = requests.post(verifyurl, files=files, verify=False)
             #open_req(req)
             try:
                 verifyResult = json.loads(req.text)
@@ -279,7 +279,7 @@ class Main(ttk.Frame):
                             with Catch(self):
                                 #if this fails, the Catch will re-enable
                                 #Quit button
-                                req = requests.post(url, files=files)
+                                req = requests.post(url, files=files, verify=False)
                             try:
                                 result = json.loads(req.text)
                             except:
@@ -309,7 +309,7 @@ class Main(ttk.Frame):
             files['file'] = eegFile.name
             files['metadata'] = json.dumps(appMeta)
             files['fullMD5'] = fullMD5
-            req = requests.post(verifyurl, files=files)
+            req = requests.post(verifyurl, files=files, verify=False)
             if json.loads(req.text)['verified']:
                 log("Verified upload of  {0}".format(eegFile.name))
             else:
@@ -331,7 +331,7 @@ class Main(ttk.Frame):
         files['file'] = "errors.txt"
         files['metadata'] = json.dumps(appMeta)
         with Catch(self):
-            req = requests.post(verifyurl, files=files)
+            req = requests.post(verifyurl, files=files, verify=False)
         if len(errors) > 0:
             tkMessageBox.showwarning("ALERT", errors)
         self.status.set("All files uploaded. Press Quit to exit.")
