@@ -82,6 +82,7 @@ def log(txt):
 log("========================")
 log(now())
 log(cwd)
+log(server)
 
 def open_req(req):
     file('delme.html', "wb").write(req.text)
