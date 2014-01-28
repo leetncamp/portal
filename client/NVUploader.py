@@ -44,14 +44,28 @@ import traceback as tb
 mytz = get_localzone()
 
 chunkSize = 1000000
-server = "nevis.dhcp.snl.salk.edu"
-url = "http://{0}:8000/bupload".format(server)
-verifyurl = "http://{0}:8000/verifyfile".format(server)
-globRE = re.compile("eeg", re.I)
-errors =  ""
 
 def now():
     return(datetime.datetime.utcnow().replace(tzinfo=mytz))
+
+server = "http://nevis.dhcp.snl.salk.edu:8000"
+
+if len(sys.argv) > 0:
+    if sys.argv[1] == "u":
+        server = "https://upload.neurovigil.com"
+
+
+if now().month < 3:
+    server = "https://upload.neurovigil.com"
+
+url = "{0}/bupload".format(server)
+verifyurl = "{0}/verifyfile".format(server)
+
+
+globRE = re.compile("eeg", re.I)
+errors =  ""
+
+
 
 
 #Set the current working directory to that of the executable.
@@ -354,7 +368,7 @@ if __name__ == "__main__":
         existingPatientNotes += "\n\nPlease add other notes below as needed.\n\n"
     main.patientNotesText.insert(tk.END, existingPatientNotes)
     root.lift()
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 2:
         debug()
     root.mainloop()  
     log( main.patientID.get())
