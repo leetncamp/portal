@@ -50,7 +50,7 @@ def now():
 
 server = "http://nevis.dhcp.snl.salk.edu:8000"
 
-if len(sys.argv) >= 1:
+if len(sys.argv) >= 2:
     if sys.argv[1] == "u":
         server = "https://upload.neurovigil.com"
 
