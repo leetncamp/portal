@@ -50,13 +50,11 @@ def now():
 
 server = "http://nevis.dhcp.snl.salk.edu:8000"
 
-if len(sys.argv) >= 2:
+if len(sys.argv) >= 2 and now().month < 3:
     if sys.argv[1] == "u":
         server = "https://upload.neurovigil.com"
 
 
-if now().month < 3:
-    server = "https://upload.neurovigil.com"
 
 url = "{0}/bupload".format(server)
 verifyurl = "{0}/verifyfile".format(server)
