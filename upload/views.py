@@ -432,7 +432,7 @@ def verifyfile(request):
             try:
                 To = get_email_to()
                 msg = Message(To=To, From='snlsmtp@gmail.com', Subject='User "{0}" uploaded Files'.format(request.user.username))
-                msg.Body = '\n"{0}" uploaded files.'.format(folder)
+                msg.Body = u'\n"{0}" uploaded files.'.format(folder)
                 msg.makeFixedWidth()
                 for recipient in To:
                     try:
@@ -441,6 +441,7 @@ def verifyfile(request):
                     except Exception as e:
                         print(e)
             except Exception as e:
+                print("Error when generating upload notification email.")
                 print(e)
             
             return HttpResponse(json.dumps({"status":"errors-saved"}), mimetype='application/json')
