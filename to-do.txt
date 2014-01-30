@@ -1,0 +1,6 @@
+ 1. Move uploaded files to a date-stamp folder.
+ 2. Authenticate the user against their account name and/or
+ 3. Check for a neurovigil serial number in the metadata to protect against a DOS
+ 4. Write python code that opens a file regardless of it's original format.
+ 5. Set up ssh-based rsync to mothership
+ 6. For the future, set up gpg encryption
