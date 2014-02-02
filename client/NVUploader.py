@@ -48,7 +48,7 @@ chunkSize = 1000000
 def now():
     return(datetime.datetime.utcnow().replace(tzinfo=mytz))
 
-server = "http://nevis.dhcp.snl.salk.edu:8000"
+server = "http://localhost:8000"
 
 if len(sys.argv) >= 2 and now().month < 3:
     if sys.argv[1] == "u":
@@ -336,6 +336,16 @@ class Main(ttk.Frame):
             tkMessageBox.showwarning("ALERT", errors)
         self.status.set("All files uploaded. Press Quit to exit.")
         self.goButton['command'] = self.quit
+        archiveFolder = "uploaded-{0}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H_%M"))
+        try:
+            os.mkdir(archiveFolder)
+            log("Setting archive folder to {0}.".format(archiveFolder))
+        except OSError:
+            pass
+        for fn in self.fileList:
+            log("Archiving {0}.".format(fn))
+            os.rename(fn, os.path.join(archiveFolder, fn))
+        self.status.set("All files uploaded and archived to {0}. Press Quit to exit.".format(archiveFolder))
         self.root.update()
     
     
