@@ -17,7 +17,7 @@ if platform.uname()[0] == "Windows":
         sys.exit(1)
     #Kill the Windows Splash screen.
     try:
-        result = sp.check_output("taskkill.exe /IM NVUplrdr.exe")
+        result = sp.check_output("taskkill.exe /IM NVUpldr.exe")
     except:
         pass
 else:    
