@@ -16,10 +16,6 @@ if platform.uname()[0] == "Windows":
         print "Instance of NVUploader.exe already running"
         sys.exit(1)
     #Kill the Windows Splash screen.
-    try:
-        result = sp.check_output("taskkill.exe /IM NVUpldr.exe")
-    except:
-        pass
 else:    
     import psutil
     if len( [ p for p in psutil.process_iter() if "NVUploader" in p.name ] ) > 1:
@@ -358,6 +354,11 @@ class Main(ttk.Frame):
 
 
 if __name__ == "__main__":
+    try:
+        result = sp.check_output("taskkill.exe /IM NVUpldr.exe")
+    except:
+        pass
+    
     try:
         appMeta = json.load(open('.metadata.json'))
     except IOError:
