@@ -5,6 +5,7 @@ import os
 import sys
 import re
 nvRE = re.compile("NVUploader", re.I)
+
 from pdb import set_trace as debug
 if platform.uname()[0] == "Windows":
     import subprocess as sp
@@ -12,8 +13,13 @@ if platform.uname()[0] == "Windows":
     tasklist = sp.check_output("tasklist")
     nvs = nvRE.findall(tasklist)
     if len(nvs) > 1:
-        print "Instance already running"
+        print "Instance of NVUploader.exe already running"
         sys.exit(1)
+    #Kill the Windows Splash screen.
+    try:
+        result = sp.check_output("taskkill.exe /IM NVUplrdr.exe")
+    except:
+        pass
 else:    
     import psutil
     if len( [ p for p in psutil.process_iter() if "NVUploader" in p.name ] ) > 1:
