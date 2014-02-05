@@ -206,7 +206,7 @@ class Main(ttk.Frame):
         appMeta['localtimepickle'] = pickle.dumps(now)
         appMeta['localtimeString'] = str(now())
         
-        json.dump(appMeta, file(".metadata.json", 'wb'))
+        json.dump(appMeta, file("clientdata.json", 'wb'))
         #log("Wrote " + json.dumps(appMeta))
         return()
     
@@ -358,7 +358,7 @@ class Main(ttk.Frame):
 
 if __name__ == "__main__":    
     try:
-        appMeta = json.load(open('.metadata.json'))
+        appMeta = json.load(open('clientdata.json'))
     except IOError:
         appMeta = {}
     root = tk.Tk()
