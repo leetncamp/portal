@@ -50,11 +50,12 @@ chunkSize = 1000000
 def now():
     return(datetime.datetime.utcnow().replace(tzinfo=mytz))
 
-server = "http://localhost:8000"
 
-if len(sys.argv) >= 2 and now().month < 3:
-    if sys.argv[1] == "u":
-        server = "https://upload.neurovigil.com"
+server = "https://upload.neurovigil.com"
+
+if sys.argv[1] == "local":
+    server = "http://localhost:8000"
+
 
 
 
