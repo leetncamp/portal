@@ -354,18 +354,22 @@ class Main(ttk.Frame):
 
 
 if __name__ == "__main__":    
+    try:
+        appMeta = json.load(open('.metadata.json'))
+    except IOError:
+        appMeta = {}
     root = tk.Tk()
     root.configure(background = "#eeeeee")
     root.resizable(width=0, height=1)
     root.geometry(appMeta.get("geometry", "589x499+11+36"))
-    
-    main= Main(root)
     
     try:
         result = sp.check_output("taskkill.exe /IM NVUpldr.exe")
     except:
         pass
     
+    
+    main= Main(root)
     
     root.title("Neurovigil Uploader")
     main.fileGlob = [x for x in os.listdir(cwd) if re.match(globRE, x) ]
