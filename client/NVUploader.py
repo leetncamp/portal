@@ -53,9 +53,11 @@ def now():
 
 server = "https://upload.neurovigil.com"
 
-if sys.argv[1] == "local":
-    server = "http://localhost:8000"
-
+try:
+    if sys.argv[1] == "local":
+        server = "http://localhost:8000"
+except IndexError:
+    pass
 
 
 
