@@ -31,7 +31,6 @@ import Tkinter as tk
 import ttk
 import re
 from pdb import set_trace as debug
-import glob
 import time
 import os
 import math
@@ -122,6 +121,91 @@ class Catch():
             errors += str(value) + "\n"
             log(tb.format_exc(traceback))
             errors += str(value) + "\n"
+
+"""This is a prototype of the data structure that holds metadata about the
+upload and about each file. Showing the structure of the file metadata just for
+reference.
+
+META = { 
+    "uploadInfo": {
+        "clinician": "",
+        "company": "",
+        "VERSION": VERSION
+    },
+    "files": [
+        {"EEG.txt": {
+            "length": 100,
+            "header": "Neurovigil\nFirmwareVersion\n...",
+            "uploaded": None,
+            "notes": "These are the notes for this file.",
+            "uploaded": datetimeobj,
+            "md5sum": "string",
+            "patientID": "string",
+        }},
+        {"EEG1.txt": {
+            "length": 100,
+            "header": "Neurovigil\nFirmwareVersion\n...",
+            "uploaded": None,
+            "notes": "These are the notes for this file.",
+        }}
+    ]
+}
+"""
+
+"""This is the one that will actually get filled out with real file data"""
+
+META = { 
+    "uploadInfo": {
+        "clinician": "",
+        "company": "",
+        "VERSION": VERSION
+    },
+    "files" : {},
+}
+
+def updateMeta(fileName):
+    stat = os.stat(fileName)
+    ctime = datetime.datetime.fromtimestamp(stat[9])
+    mtime = datetime.datetime.fromtimestamp(stat[8])
+    f = file(fileName, 'rb')
+    #Read in the text header at the top of the file.
+    head = f.read(1000)
+    header = ""
+    for line in head.split("\n"):
+        try:
+            header += line.encode('ascii') + "\n"
+        except:
+            #This will fail on the first line with binary data.
+            break
+    #Get the length of the file
+    f.seek(0,2)
+    length = f.tell()
+    #Update the META object
+    thisMeta = META['files'].get(fileName, {})
+    thisMeta['ctime'] = ctime
+    thisMeta['mtime'] = mtime
+    thisMeta['length'] = length
+    thisMeta['header'] = header
+    META['files'][fileName] = thisMeta
+
+    
             
-if __name__ == "__main__":    
-    pass
+if __name__ == "__main__":
+    try:
+        META = pickle.load(file("metadata.pickle", "rb"))
+    except Exception as e:
+        print e
+    fileList = [x for x in os.listdir(cwd) if re.match(globRE, x) ]
+    for fileName in fileList:
+        updateMeta(fileName)
+
+    print META.keys()
+    print META
+    pickle.dump(META, file("metadata.pickle", "wb"))
+    
+    
+    
+    
+    
+    
+    
