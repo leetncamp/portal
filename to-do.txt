@@ -4,3 +4,10 @@
  4. Write python code that opens a file regardless of it's original format.
  5. Set up ssh-based rsync to mothership
  6. For the future, set up gpg encryption
+ 
+ 
+ 1. Rather than move uploaded files to a folder, just note that they've been uploaded?
+ 2. Keep metadata per file
+ 3. Option to apply one patient ID to all files.
+ 4. Keep upload api version in place for all time, so maybe have a version folder plus a version in metadata.
+ 
