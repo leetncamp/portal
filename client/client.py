@@ -222,20 +222,35 @@ class UploadWindow(tk.Frame):
         #Patient ID
 
         self.pidCheck = tk.IntVar()
-        self.pidCheckbox = tk.Checkbutton(self.row1, text="Uploading data for multiple patients", variable=self.pidCheck)
+        self.pidCheckbox = tk.Checkbutton(self.row1, text="Uploading data for multiple patients", variable=self.pidCheck, command=self.checkbox)
         self.pidCheckbox.grid(row=1, column=1, sticky=tk.W)
-        self.pidCheck = 0
         self.patientID = tk.StringVar()
         self.patientIDL = tk.Label(self.row1, text="Patient ID")
-        self.patientIDL.grid(row=1, column=2)
         self.patientIDE = tk.Entry(self.row1, textvariable=self.patientID, width=30)
-        self.patientIDE.grid(row=1, column=3)
+        self.multipleIDL = tk.Label(self.row1, text="Enter patient ID's for each file below.")
+        self.showPatientID()
         self.row1.pack()
         self.outsidePad.pack()
         self.pack()
-        debug()
+        self.mainloop()
+    
+    def showPatientID(self):
+        self.multipleIDL.grid_forget()
+        self.patientIDL.grid(row=1, column=2)
+        self.patientIDE.grid(row=1, column=3)
+    
+    def hidePatientID(self):
+        self.patientIDL.grid_forget()
+        self.patientIDE.grid_forget()
+        self.multipleIDL.grid(row=1, columnspan=1, column=3, sticky=tk.E)
         
+    def checkbox(self, *args, **kwargs):
+        if self.pidCheck.get():
+            self.hidePatientID()
+        else:
+            self.showPatientID()
 
+        
 
 if __name__ == "__main__":
     
