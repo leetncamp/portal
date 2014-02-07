@@ -15,7 +15,7 @@ if platform.uname()[0] == "Windows":
     import subprocess as sp
     #psutil doesn't necessarily have permission in Windows 7. Use tasklist.
     tasklist = sp.check_output("tasklist")
-    nvs = nvRE.findall(tasklist)
+    nvs      = nvRE.findall(tasklist)
     if len(nvs) > 1:
         print "Instance of NVUploader.exe already running"
         sys.exit(1)
@@ -57,7 +57,7 @@ def now():
 server = "https://upload.neurovigil.com"
 
 try:
-    if sys.argv[1] == "local":
+    if "local" in sys.argv:
         server = "http://localhost:8000"
 except IndexError:
     pass
@@ -65,7 +65,7 @@ except IndexError:
 
 
 url = "{0}/bupload".format(server)
-verifyurl = "{0}/verify/{1}".format(server, VERSION)
+checkstatus = "{0}/verify/{1}".format(server, VERSION)
 
 
 globRE = re.compile("eeg", re.I)
@@ -170,10 +170,10 @@ defaultMETA = {
 }
 
 def updateMeta(fileName):
-    stat = os.stat(fileName)
+    stat  = os.stat(fileName)
     ctime = datetime.datetime.fromtimestamp(stat[9])
     mtime = datetime.datetime.fromtimestamp(stat[8])
-    f = file(fileName, 'rb')
+    f     = file(fileName, 'rb')
     #Read in the text header at the top of the file.
     head = f.read(1000)
     header = ""
@@ -187,11 +187,11 @@ def updateMeta(fileName):
     f.seek(0,2)
     length = f.tell()
     #Update the META object
-    thisMeta = META['files'].get(fileName, {})
-    thisMeta['ctime'] = ctime
-    thisMeta['mtime'] = mtime
-    thisMeta['length'] = length
-    thisMeta['header'] = header
+    thisMeta                = META['files'].get(fileName, {})
+    thisMeta['ctime']       = ctime
+    thisMeta['mtime']       = mtime
+    thisMeta['length']      = length
+    thisMeta['header']      = header
     META['files'][fileName] = thisMeta
 
 def askCompany():
@@ -201,29 +201,45 @@ def askCompany():
     
             
 if __name__ == "__main__":
+    
+    """Read in any metadata stored in metadata.pickle. If none exists, return
+    the default META dictionary"""
+        
     try:
         META = pickle.load(file("metadata.pickle", "rb"))
     except Exception as e:
         META = defaultMETA
     if not META['uploadInfo'].get('company', ""):
-        META['uploadInfo']['company'] = askCompany()
-    debug() 
+        if "ask" in sys.argv:
+            META['uploadInfo']['company'] = askCompany()
+        else:
+            META['uploadInfo']['company'] = None
+        
+    """For each EEG file add it's length, ctime and other metadata to the
+    metadata structure."""
+
     fileList = [x for x in os.listdir(cwd) if re.match(globRE, x) ]
     for fileName in fileList:
         updateMeta(fileName)
     
-    req = requests.post(verifyurl, files={"meta":pickle.dumps(META)})
-    try:
-        
-        meta = pickle.loads(req.text.encode("utf-8"))
-        message = meta.get('message', "")
-        status = meta.get('status', "")
-    except Exception as e:
-        message = open_req(req)
-        status = "unexpected result from server"
-    print message
-    print status
-    print meta
+    """Send the meta to the server. If company name is missing, there isn't any
+    point in trying to check the upload status."""
+    
+    if  META['uploadInfo']['company']:
+        req = requests.post(checkstatus, files={"meta":pickle.dumps(META)})
+        try:
+            meta    = pickle.loads(req.text.encode("utf-8"))
+            message = meta.get('message', "")
+            status  = meta.get('status', "")
+        except Exception as e:
+            message = open_req(req)
+            status  = "unexpected result from server"
+        print message
+        print status
+        print meta
+    else:
+        meta = META
+    
     pickle.dump(meta, file("metadata.pickle", "wb"))
         
     
