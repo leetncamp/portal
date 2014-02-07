@@ -41,16 +41,17 @@ import zlib
 import hashlib
 import tkMessageBox
 import datetime
-import pytz
 import dateutil
-from tzlocal import get_localzone
 import traceback as tb
+from dateutil.tz import gettz, tzlocal
 
-mytz = get_localzone()
+localtimezoneStr = datetime.datetime.now(tzlocal()).tzname()
+
+
 
 chunkSize = 1000000
 def now():
-    return(datetime.datetime.utcnow().replace(tzinfo=mytz))
+    return(datetime.datetime.now().replace(tzinfo=tzlocal()))
 
 
 server = "https://upload.neurovigil.com"
@@ -64,7 +65,7 @@ except IndexError:
 
 
 url = "{0}/bupload".format(server)
-verifyurl = "{0}/verifyfile".format(server)
+verifyurl = "{0}/verify/{1}".format(server, VERSION)
 
 
 globRE = re.compile("eeg", re.I)
@@ -82,7 +83,7 @@ os.chdir(cwd)
 logfile = file("upload.log", 'a')
 
 def log(txt):
-    logfile.write("{0} : {1}\n".format(now().astimezone(mytz), txt))
+    logfile.write("{0} : {1}\n".format(now(), txt))
     logfile.flush()
     #print txt
 
@@ -131,6 +132,7 @@ META = {
         "clinician": "",
         "company": "",
         "VERSION": VERSION
+        "localtimezone": "America/Los_Angeles",
     },
     "files": [
         {"EEG.txt": {
@@ -158,7 +160,8 @@ META = {
     "uploadInfo": {
         "clinician": "",
         "company": "",
-        "VERSION": VERSION
+        "VERSION": VERSION,
+        "localtimezone": localtimezoneStr,
     },
     "files" : {},
 }
@@ -188,6 +191,10 @@ def updateMeta(fileName):
     thisMeta['header'] = header
     META['files'][fileName] = thisMeta
 
+def askCompany():
+    from ask import ask_company
+    return(ask_company())    
+    
     
             
 if __name__ == "__main__":
@@ -198,13 +205,22 @@ if __name__ == "__main__":
     fileList = [x for x in os.listdir(cwd) if re.match(globRE, x) ]
     for fileName in fileList:
         updateMeta(fileName)
-
+    company = askCompany()
+    print company
+    req = requests.post(verifyurl, files={"meta":pickle.dumps(META)})
+    try:    
+        result = pickle.loads(req.text)
+        message = result['message']
+        status = result['status']
+    except Exception as e:
+        message = open_req(req)
+        status = "unexpected result from server"
+    print message
+    print status
     print META.keys()
     print META
     pickle.dump(META, file("metadata.pickle", "wb"))
-    
-    
-    
+        
     
     
     

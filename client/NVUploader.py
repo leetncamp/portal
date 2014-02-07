@@ -129,7 +129,6 @@ class Main(ttk.Frame):
         #style.configure("BW.TLabel", foreground="black", background="white")
         
         self.root = root
-        ttk.Style()
         self.top = ttk.Frame()
         self.style = ttk.Style()
         self.top.pack(side="top", fill="x", padx=10, pady=10)

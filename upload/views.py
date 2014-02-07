@@ -26,6 +26,7 @@ import time
 import glob
 import string
 import re
+
 escapeRE = re.compile("^\.\./|^\/|^\.\/")
 valid_chars = "/-_.() %s%s" % (string.ascii_letters, string.digits)
 
@@ -524,3 +525,57 @@ def bUpload(request):
         destFile = file(filepath, 'ab').write(zlib.decompress(chunk))
     data = {"status": success}
     return HttpResponse(json.dumps(data), mimetype='application/json')
+
+def verify_1_0(meta, version):
+
+    """We recieve a dictionary that contains metadata about the upload and then
+    more metadata about each file. The dictionary looks like this. Our job here
+    is to add what we know about each file to the dictionary and send it back.
+    
+    
+    META = { 
+        "uploadInfo": {
+            "clinician": "",
+            "company": "",
+            "VERSION": VERSION
+            "localtimezone": "America/Los_Angeles",
+        },
+        "files": [
+            {"EEG.txt": {
+                "length": 100,
+                "header": "Neurovigil\nFirmwareVersion\n...",
+                "uploaded": None,
+                "notes": "These are the notes for this file.",
+                "uploaded": datetimeobj,
+                "md5sum": "string",
+                "patientID": "string",
+            }},
+            {"EEG1.txt": {
+                "length": 100,
+                "header": "Neurovigil\nFirmwareVersion\n...",
+                "uploaded": None,
+                "notes": "These are the notes for this file.",
+            }}
+        ]
+    }
+    
+    
+    """
+
+
+    data_dir = os.path.join(upload_dir, meta['uploadInfo']['company'])
+    debug()
+
+
+
+@csrf_exempt    
+def verify(request, version=None):
+    request._load_post_and_files()
+    meta = pickle.loads(request._files['meta'].read())
+    debug()
+    version = float(version)
+    if version >.85 and version < 2.0:
+        verify_1_0(request, version)
+    else:
+        data={"status":"version not supported", "message":"This version of the uploader, {0}, is not supported by the upload server.".format(version)}
+        return HttpResponse(pickle.dumps(data), mimetype='application/binary')
