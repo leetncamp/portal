@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import division
-
+from collections import OrderedDict
 VERSION = 0.9
 
 
@@ -29,6 +29,7 @@ else:
 
 import Tkinter as tk
 import ttk
+import tkFont
 import re
 from pdb import set_trace as debug
 import time
@@ -44,6 +45,8 @@ import datetime
 import dateutil
 import traceback as tb
 from dateutil.tz import gettz, tzlocal
+import pytz
+lajolla = pytz.timezone("America/Los_Angeles")
 
 localtimezoneStr = datetime.datetime.now(tzlocal()).tzname()
 
@@ -230,9 +233,49 @@ class UploadWindow(tk.Frame):
         self.multipleIDL = tk.Label(self.row1, text="Enter patient ID's for each file below.")
         self.showPatientID()
         self.row1.pack()
+        
+        #File list
+        
+        self.filegroup = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Files", padx=10, pady=10)
+        self.headings = ["File", "Date", "Notes", "PatientID", "Upload Progress"]
+        self.drawHeadings()
+        self.drawFiles()
+        self.filegroup.pack()
+
+        
+        
         self.outsidePad.pack()
         self.pack()
         self.mainloop()
+        
+    def drawHeadings(self):
+        #First remove the ones that are there.
+        column = 0
+        for heading in self.headings:
+            lab = tk.Label(self.filegroup, text=heading)
+            font = tkFont.Font(lab, lab.cget("font"))
+            font.configure(underline=True)
+            lab.configure(font=font)
+            lab.grid(row=0, column=column, sticky=tk.W)
+            column += 1
+    
+    def drawFiles(self):
+        row = 1
+
+        for fn in meta['files']:
+            thisFile = {}
+            info = meta['files'][fn]
+            date = str(info['ctime'])
+            thisFile['nameL'] = tk.Label(self.filegroup, text=fn)
+            thisFile['nameL'].grid(row=row, column=0, sticky=tk.W)
+            """The file's datestamp is in La Jolla time. Convert it to iBrain's local time"""
+            localstamp = info['ctime'].replace(tzinfo=lajolla).astimezone(tzlocal())
+            thisFile['dateL'] = tk.Label(self.filegroup)
+            thisFile['dateL'].grid(row=row, column=1, sticky=tk.W)
+            if self.patientID.get():
+                pass
+            debug()
+            
     
     def showPatientID(self):
         self.multipleIDL.grid_forget()
