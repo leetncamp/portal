@@ -21,7 +21,7 @@ import hashlib
 import traceback
 import subprocess
 from snlmailer import Message
-from notify.py import notification_emails
+from notify import notification_emails
 
 import time
 import glob

@@ -4,9 +4,6 @@
 uploads. The django view will import 'notification_emails' from this file."""
 
 import os
-#Comma separated list of names to send an email to when a file is uploaded, e.g.
-#philip@neurovigil, dan@neurovigil.com
-
 
 hostname = os.uname()[1]
 if "upload" in hostname:

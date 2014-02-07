@@ -93,7 +93,6 @@ log(cwd)
 log(server)
 
 def open_req(req):
-    debug()
     file('delme.html', "wb").write(req.text.encode('utf-8'))
     os.system("open delme.html")
     return
@@ -198,10 +197,46 @@ def askCompany():
     from ask import ask_company
     return(ask_company())    
     
-class Upload(tk.Frame):
+class UploadWindow(tk.Frame):
     
-    def __init__(self)
-            
+    def __init__(self, root, *args, **kwargs):
+        self.root = root
+
+        tk.Frame.__init__(self, root, *args, bg="#ffffff", padx=10, pady=10,  **kwargs)
+        self.root.title("Neurovigil EEG Uploader")
+        self.outsidePad = tk.Frame(self.root, padx=10, pady=10)
+        #Company name and clinician name
+        self.row1 = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Upload Information", padx=5, pady=5)
+        self.clinician = tk.StringVar()
+        self.clinicianL = tk.Label(self.row1, text="Clinician Name")
+        self.clinicianL.grid(row=0, column=0)
+        self.clinicianE = tk.Entry(self.row1, textvariable=self.clinician, width=30)
+        self.clinicianE.grid(row=0, column=1)
+        self.company = tk.StringVar()
+        self.companyL = tk.Label(self.row1, text="Company Name")
+        self.companyL.grid(row=0, column=2)
+        self.companyE = tk.Entry(self.row1, textvariable=self.company, width=30)
+        self.companyE.grid(row=0, column=3)
+        
+        
+        #Patient ID
+
+        self.pidCheck = tk.IntVar()
+        self.pidCheckbox = tk.Checkbutton(self.row1, text="Uploading data for multiple patients", variable=self.pidCheck)
+        self.pidCheckbox.grid(row=1, column=1, sticky=tk.W)
+        self.pidCheck = 0
+        self.patientID = tk.StringVar()
+        self.patientIDL = tk.Label(self.row1, text="Patient ID")
+        self.patientIDL.grid(row=1, column=2)
+        self.patientIDE = tk.Entry(self.row1, textvariable=self.patientID, width=30)
+        self.patientIDE.grid(row=1, column=3)
+        self.row1.pack()
+        self.outsidePad.pack()
+        self.pack()
+        debug()
+        
+
+
 if __name__ == "__main__":
     
     """Read in any metadata stored in metadata.pickle. If none exists, return
@@ -235,13 +270,15 @@ if __name__ == "__main__":
             status  = meta.get('status', "")
         except Exception as e:
             message = open_req(req)
-            status  = "unexpected result from server"
-        print message
-        print status
-        print meta
+            meta  = "unexpected result from server"
     else:
         meta = META
+    print meta
     
+    """Open the Tk Window"""
+    root = tk.Tk()
+    app = UploadWindow(root)
+     
     pickle.dump(meta, file("metadata.pickle", "wb"))
         
     
