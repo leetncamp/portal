@@ -198,7 +198,9 @@ def askCompany():
     from ask import ask_company
     return(ask_company())    
     
+class Upload(tk.Frame):
     
+    def __init__(self)
             
 if __name__ == "__main__":
     
