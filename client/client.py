@@ -50,8 +50,6 @@ lajolla = pytz.timezone("America/Los_Angeles")
 
 localtimezoneStr = datetime.datetime.now(tzlocal()).tzname()
 
-
-
 chunkSize = 1000000
 def now():
     return(datetime.datetime.now().replace(tzinfo=tzlocal()))
@@ -65,17 +63,11 @@ try:
 except IndexError:
     pass
 
-
-
 url = "{0}/bupload".format(server)
 checkstatus = "{0}/verify/{1}".format(server, VERSION)
 
-
 globRE = re.compile("eeg", re.I)
 errors =  ""
-
-
-
 
 #Set the current working directory to that of the executable.
 cwd = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -209,13 +201,18 @@ class UploadWindow(tk.Frame):
         self.root.title("Neurovigil EEG Uploader")
         self.outsidePad = tk.Frame(self.root, padx=10, pady=10)
         #Company name and clinician name
-        self.row1 = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Upload Information", padx=5, pady=5)
-        self.clinician = tk.StringVar()
+        self.files      = OrderedDict()
+        self.row1       = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Upload Information", padx=5, pady=5)
+        self.clinician  = tk.StringVar()
         self.clinicianL = tk.Label(self.row1, text="Clinician Name")
+        #create an underline font using the default font in label
+        self.font = tkFont.Font(self.clinicianL, self.clinicianL.cget("font"))
+        self.font.configure(underline=True)
+        
         self.clinicianL.grid(row=0, column=0)
         self.clinicianE = tk.Entry(self.row1, textvariable=self.clinician, width=30)
         self.clinicianE.grid(row=0, column=1)
-        self.company = tk.StringVar()
+        self.company  = tk.StringVar()
         self.companyL = tk.Label(self.row1, text="Company Name")
         self.companyL.grid(row=0, column=2)
         self.companyE = tk.Entry(self.row1, textvariable=self.company, width=30)
@@ -224,20 +221,20 @@ class UploadWindow(tk.Frame):
         
         #Patient ID
 
-        self.pidCheck = tk.IntVar()
+        self.pidCheck    = tk.IntVar()
         self.pidCheckbox = tk.Checkbutton(self.row1, text="Uploading data for multiple patients", variable=self.pidCheck, command=self.checkbox)
         self.pidCheckbox.grid(row=1, column=1, sticky=tk.W)
-        self.patientID = tk.StringVar()
-        self.patientIDL = tk.Label(self.row1, text="Patient ID")
-        self.patientIDE = tk.Entry(self.row1, textvariable=self.patientID, width=30)
+        self.patientID   = tk.StringVar()
+        self.patientIDL  = tk.Label(self.row1, text="Patient ID")
+        self.patientIDE  = tk.Entry(self.row1, textvariable=self.patientID, width=30)
         self.multipleIDL = tk.Label(self.row1, text="Enter patient ID's for each file below.")
-        self.showPatientID()
+        self.goSinglePatient()
         self.row1.pack()
         
         #File list
         
         self.filegroup = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Files", padx=10, pady=10)
-        self.headings = ["File", "Date", "Notes", "PatientID", "Upload Progress"]
+        self.headings = ["File", "Date", "PatientID", "Notes", "Upload", "Upload Progress"]
         self.drawHeadings()
         self.drawFiles()
         self.filegroup.pack()
@@ -253,45 +250,76 @@ class UploadWindow(tk.Frame):
         column = 0
         for heading in self.headings:
             lab = tk.Label(self.filegroup, text=heading)
-            font = tkFont.Font(lab, lab.cget("font"))
-            font.configure(underline=True)
-            lab.configure(font=font)
+            lab.configure(font=self.font)
             lab.grid(row=0, column=column, sticky=tk.W)
             column += 1
     
     def drawFiles(self):
         row = 1
-
         for fn in meta['files']:
-            thisFile = {}
-            info = meta['files'][fn]
-            date = str(info['ctime'])
-            thisFile['nameL'] = tk.Label(self.filegroup, text=fn)
-            thisFile['nameL'].grid(row=row, column=0, sticky=tk.W)
+            thisFile                   = {}
+            info                       = meta['files'][fn]
+            thisFile['nameL']          = tk.Label(self.filegroup, text=fn)
+            thisFile['nameL'].grid(row = row, column=0, sticky=tk.W)
             """The file's datestamp is in La Jolla time. Convert it to iBrain's local time"""
-            localstamp = info['ctime'].replace(tzinfo=lajolla).astimezone(tzlocal())
-            thisFile['dateL'] = tk.Label(self.filegroup)
-            thisFile['dateL'].grid(row=row, column=1, sticky=tk.W)
+            localstamp                 = info['ctime'].replace(tzinfo=lajolla).astimezone(tzlocal())
+            thisFile['dateL']          = tk.Label(self.filegroup, text=localstamp.strftime("%b %d, %Y %I:%M %p"))
+            thisFile['dateL'].grid(row = row, column=1, sticky=tk.W)
+            thisFile['patientID']      = tk.StringVar()
+            thisFile['patientIDE-m']   = tk.Entry(self.filegroup, textvariable=thisFile['patientID'], width=15)
+            thisFile['patientIDE']     = tk.Entry(self.filegroup, textvariable=self.patientID, width=15) 
             if self.patientID.get():
-                pass
-            debug()
+                #Uploading for multiple patients. Show the Entry widget here.
+                thisFile['patientIDE-m'].grid(row=row, column=2, sticky=tk.W)
+            else:
+                thisFile['patientIDE'].grid(row=row, column=2, sticky=tk.W)
+            thisFile['notes'] = tk.StringVar()
+            thisFile['notesL'] = tk.Entry(self.filegroup, textvariable = thisFile['notes'], width=25)
+            thisFile['notesL'].grid(row=row, column=3)
+            thisFile['uploadVal'] = tk.IntVar()
+            thisFile['upload'] = tk.Checkbutton(self.filegroup, variable=thisFile['uploadVal'])
+            thisFile['upload'].grid(row=row, column=4)
+            thisFile['pb'] = ttk.Progressbar(self.filegroup, mode='determinate')
+            thisFile['pb'].grid(row=row, column=5)
+            self.files[fn] = thisFile
             
-    
-    def showPatientID(self):
+
+    def goSinglePatient(self):
+        
+        """In single patient mode, we link all the patientID fields together by
+        binding them all to self.patientID"""
+        
         self.multipleIDL.grid_forget()
         self.patientIDL.grid(row=1, column=2)
         self.patientIDE.grid(row=1, column=3)
+        #If files are showing, we need to replace their entry widget
+        row=1
+        for fn in self.files:
+            self.files[fn]["patientIDE-m"].grid_forget()
+            self.files[fn]['patientIDE'].grid(row=row, column=2)
+            row += 1
+        
     
-    def hidePatientID(self):
+    def goMultiplePatient(self):
+        
+        """In multiplepatient mode, each file's patientID's entry widget has
+        it's own storage variable"""
+        
         self.patientIDL.grid_forget()
         self.patientIDE.grid_forget()
         self.multipleIDL.grid(row=1, columnspan=1, column=3, sticky=tk.E)
+        row=1
+        for fn in self.files:
+            self.files[fn]["patientIDE"].grid_forget()
+            self.files[fn]['patientIDE-m'].grid(row=row, column=2)
+            row += 1
+        
         
     def checkbox(self, *args, **kwargs):
         if self.pidCheck.get():
-            self.hidePatientID()
+            self.goMultiplePatient()
         else:
-            self.showPatientID()
+            self.goSinglePatient()
 
         
 
