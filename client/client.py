@@ -93,7 +93,8 @@ log(cwd)
 log(server)
 
 def open_req(req):
-    file('delme.html', "wb").write(req.text)
+    debug()
+    file('delme.html', "wb").write(req.text.encode('utf-8'))
     os.system("open delme.html")
     return
 
@@ -143,6 +144,8 @@ META = {
             "uploaded": datetimeobj,
             "md5sum": "string",
             "patientID": "string",
+            "ctime": datetimeobj,
+            "mtime": datetimeobj,
         }},
         {"EEG1.txt": {
             "length": 100,
@@ -156,7 +159,7 @@ META = {
 
 """This is the one that will actually get filled out with real file data"""
 
-META = { 
+defaultMETA = { 
     "uploadInfo": {
         "clinician": "",
         "company": "",
@@ -201,25 +204,27 @@ if __name__ == "__main__":
     try:
         META = pickle.load(file("metadata.pickle", "rb"))
     except Exception as e:
-        print e
+        META = defaultMETA
+    if not META['uploadInfo'].get('company', ""):
+        META['uploadInfo']['company'] = askCompany()
+    debug() 
     fileList = [x for x in os.listdir(cwd) if re.match(globRE, x) ]
     for fileName in fileList:
         updateMeta(fileName)
-    company = askCompany()
-    print company
+    
     req = requests.post(verifyurl, files={"meta":pickle.dumps(META)})
-    try:    
-        result = pickle.loads(req.text)
-        message = result['message']
-        status = result['status']
+    try:
+        
+        meta = pickle.loads(req.text.encode("utf-8"))
+        message = meta.get('message', "")
+        status = meta.get('status', "")
     except Exception as e:
         message = open_req(req)
         status = "unexpected result from server"
     print message
     print status
-    print META.keys()
-    print META
-    pickle.dump(META, file("metadata.pickle", "wb"))
+    print meta
+    pickle.dump(meta, file("metadata.pickle", "wb"))
         
     
     

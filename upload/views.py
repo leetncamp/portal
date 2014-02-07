@@ -530,7 +530,7 @@ def verify_1_0(meta, version):
 
     """We recieve a dictionary that contains metadata about the upload and then
     more metadata about each file. The dictionary looks like this. Our job here
-    is to add what we know about each file to the dictionary and send it back.
+    is to check to see if the file needs to be uploaded based on file size. 
     
     
     META = { 
@@ -546,9 +546,11 @@ def verify_1_0(meta, version):
                 "header": "Neurovigil\nFirmwareVersion\n...",
                 "uploaded": None,
                 "notes": "These are the notes for this file.",
-                "uploaded": datetimeobj,
+                "uploaded": datetimeobj, # (or none)
                 "md5sum": "string",
                 "patientID": "string",
+                "ctime": datetimeobj,
+                "mtime": datetimeobj,
             }},
             {"EEG1.txt": {
                 "length": 100,
@@ -562,9 +564,21 @@ def verify_1_0(meta, version):
     
     """
 
-
+    files = meta['files']
     data_dir = os.path.join(upload_dir, meta['uploadInfo']['company'])
-    debug()
+    for fn in files:
+        thisFile = files[fn]
+        try:
+            f = open(os.path.join(data_dir, fn), "rb")
+            f.seek(0,2)
+            length = f.tell()
+            length = thisFile['length']
+            thisFile['uploaded'] = length == thisFile['length']
+        except IOError:
+            thisFile['uploaded'] = None
+
+    return HttpResponse(pickle.dumps(meta), mimetype='application/binary')    
+            
 
 
 
@@ -572,10 +586,9 @@ def verify_1_0(meta, version):
 def verify(request, version=None):
     request._load_post_and_files()
     meta = pickle.loads(request._files['meta'].read())
-    debug()
     version = float(version)
     if version >.85 and version < 2.0:
-        verify_1_0(request, version)
+        return(verify_1_0(meta, version))
     else:
         data={"status":"version not supported", "message":"This version of the uploader, {0}, is not supported by the upload server.".format(version)}
         return HttpResponse(pickle.dumps(data), mimetype='application/binary')
