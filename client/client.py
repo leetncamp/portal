@@ -77,6 +77,9 @@ os.chdir(cwd)
 
 logfile = file("upload.log", 'a')
 
+positionRE = re.compile(r"(\+\d+\+\d+)")
+sizeRE = re.compile(r"(\d+x\d*)")
+
 def log(txt):
     logfile.write("{0} : {1}\n".format(now(), txt))
     logfile.flush()
@@ -122,7 +125,7 @@ class Catch():
 upload and about each file. Showing the structure of the file metadata just for
 reference.
 
-META = { 
+meta = { 
     "uploadInfo": {
         "clinician": "",
         "company": "",
@@ -153,7 +156,7 @@ META = {
 
 """This is the one that will actually get filled out with real file data"""
 
-defaultMETA = { 
+defaultmeta = { 
     "uploadInfo": {
         "clinician": "",
         "company": "",
@@ -180,13 +183,13 @@ def updateMeta(fileName):
     #Get the length of the file
     f.seek(0,2)
     length = f.tell()
-    #Update the META object
-    thisMeta                = META['files'].get(fileName, {})
+    #Update the meta object
+    thisMeta                = meta['files'].get(fileName, {})
     thisMeta['ctime']       = ctime
     thisMeta['mtime']       = mtime
     thisMeta['length']      = length
     thisMeta['header']      = header
-    META['files'][fileName] = thisMeta
+    meta['files'][fileName] = thisMeta
 
 def askCompany():
     from ask import ask_company
@@ -195,8 +198,8 @@ def askCompany():
 class UploadWindow(tk.Frame):
     
     def __init__(self, root, *args, **kwargs):
+        global meta
         self.root = root
-
         tk.Frame.__init__(self, root, *args, bg="#ffffff", padx=10, pady=10,  **kwargs)
         self.root.title("Neurovigil EEG Uploader")
         self.outsidePad = tk.Frame(self.root, padx=10, pady=10)
@@ -239,9 +242,8 @@ class UploadWindow(tk.Frame):
         self.row1.pack()
         
         #File list
-        
         self.filegroup = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Files", padx=10, pady=10)
-        self.headings = ["File", "Date", "PatientID", "Notes", "Upload", "Upload Progress"]
+        self.headings = ["File", "Date", "PatientID", "Notes", "Upload", "Server Status", "Upload Progress"]
         self.drawHeadings()
         self.drawFiles()
         self.filegroup.pack()
@@ -252,26 +254,47 @@ class UploadWindow(tk.Frame):
         self.uploadB.grid(row=0, column=0, sticky=tk.W)
         self.quitB = tk.Button(self.rowQuit, text="Quit", command=self.exit)
         self.quitB.grid(row=0, column=1, sticky=tk.E)
-
-        
-        
         
         #Status bar
-        
         self.rowStatus = tk.Frame(self.root)
         self.status = tk.Label(self.rowStatus, bd=1, relief=tk.SUNKEN, anchor=tk.W, text="Starting up", bg="#ddd", padx=10)
         self.status.pack(fill=tk.X, padx=0, pady=2)
         
-        
-        #Set the values of the widgets from meta
-        
-
-        
-        #Display the widgets
+        #Display the all the widgets
         self.rowQuit.pack(fill=tk.X)
         self.outsidePad.pack()
         self.rowStatus.pack(fill=tk.X)
         self.pack()
+        self.update()
+        
+        #Move the window to the same position it was last time.
+        size = re.search(sizeRE, self.root.geometry()).group(1)
+        position = re.search(positionRE, meta.get('geometry', "+10+10")).group(1)
+        self.root.geometry(size+position)
+        
+        """Send the meta to the server. If company name is missing, there isn't any
+        point in trying to check the upload status."""
+    
+        if  meta['uploadInfo']['company']:
+            try:
+                req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)})
+            except Exception as e:
+                if "Connection refused" in str(e):
+                    message = "Could not connect to the server {0}".format(server)
+                    log(message)
+                    sys.exit(1)
+            try:
+                meta    = pickle.loads(req.text.encode("utf-8"))
+                message = meta.get('message', "")
+                status  = meta.get('status', "")
+            except Exception as e:
+                message = open_req(req)
+                meta  = "unexpected result from server"
+        else:
+            meta = meta
+        print meta
+        
+        
         self.mainloop()
     
     def updateMetaFromForm(self):
@@ -326,8 +349,10 @@ class UploadWindow(tk.Frame):
             thisFile['uploadVal'] = tk.IntVar()
             thisFile['upload'] = tk.Checkbutton(self.filegroup, variable=thisFile['uploadVal'])
             thisFile['upload'].grid(row=self.filerow, column=4)
+            thisFile['serverstatus'] = tk.Label(self.filegroup, text="?")
+            thisFile['serverstatus'].grid(row=self.filerow, column=5)
             thisFile['pb'] = ttk.Progressbar(self.filegroup, mode='determinate')
-            thisFile['pb'].grid(row=self.filerow, column=5)
+            thisFile['pb'].grid(row=self.filerow, column=6)
             self.files[fn] = thisFile
             self.filerow += 1
             
@@ -379,50 +404,35 @@ class UploadWindow(tk.Frame):
 if __name__ == "__main__":
     
     """Read in any metadata stored in metadata.pickle. If none exists, return
-    the default META dictionary"""
+    the default meta dictionary"""
         
     try:
-        META = pickle.load(file("metadata.pickle", "rb"))
+        meta = pickle.load(file("metadata.pickle", "rb"))
     except Exception as e:
-        META = defaultMETA
-    if not META['uploadInfo'].get('company', ""):
+        meta = defaultmeta
+    if not meta['uploadInfo'].get('company', ""):
         if "ask" in sys.argv:
-            META['uploadInfo']['company'] = askCompany()
+            meta['uploadInfo']['company'] = askCompany()
         else:
-            META['uploadInfo']['company'] = ""
+            meta['uploadInfo']['company'] = ""
         
     """For each EEG file add it's length, ctime and other metadata to the
-    metadata structure."""
-
+    metadata dictionary refreshing any dictionary structures for files that
+    already exist in the meta dictionary and adding any new ones. Delete ones
+    that are missing from the filesystem.
+    
+    In other words, sync from filesystem to meta"""
+    
     fileList = [x for x in os.listdir(cwd) if re.match(globRE, x) ]
     for fileName in fileList:
         updateMeta(fileName)
-    
-    """Send the meta to the server. If company name is missing, there isn't any
-    point in trying to check the upload status."""
-    
-    if  META['uploadInfo']['company']:
-        try:
-            req = requests.post(checkstatus, files={"meta":pickle.dumps(META)})
-        except Exception as e:
-            if "Connection refused" in str(e):
-                message = "Could not connect to the server {0}".format(server)
-                log(message)
-                sys.exit(1)
-        try:
-            meta    = pickle.loads(req.text.encode("utf-8"))
-            message = meta.get('message', "")
-            status  = meta.get('status', "")
-        except Exception as e:
-            message = open_req(req)
-            meta  = "unexpected result from server"
-    else:
-        meta = META
-    print meta
+
+    for fileName in meta['files']:
+        if fileName not in fileList:
+            del meta['files'][fileName]
     
     """Open the Tk Window"""
     root = tk.Tk()
-    root.geometry(meta.get("geometry", ""))
     app = UploadWindow(root)
     meta['geometry'] = root.geometry()
     pickle.dump(meta, file("metadata.pickle", "wb"))
