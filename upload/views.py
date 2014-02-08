@@ -498,6 +498,11 @@ def bUpload(request):
     working_folder = os.path.join(upload_dir, folder)
     filepath = os.path.join(working_folder, filename)
     
+    #if there is an error blog to be written
+    errors = data.get('errors', None)
+    if errors:
+        errorpath = os.path.join(working_folder, "errors.txt")
+        file(errorpath, "rb").write(errors)
     
     
     #if there is a fullMD5 key, then 
