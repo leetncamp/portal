@@ -268,7 +268,7 @@ class UploadWindow(tk.Frame):
         #Status bar
         self.rowStatus = tk.Frame(self.root)
         self.status = tk.StringVar()
-        self.status.set("Starting up")
+        self.status.set("Checking for resume information for partially uploaded files. May take a minute...")
         self.statusL = tk.Label(self.rowStatus, bd=1, relief=tk.SUNKEN, anchor=tk.W, bg="#ddd", padx=10, textvariable=self.status)
         self.statusL.pack(fill=tk.X, padx=0, pady=2)
         
@@ -285,9 +285,15 @@ class UploadWindow(tk.Frame):
     
         if self.company.get():
 
-            self.status.set("Checking with the server...")
+            self.status.set("Checking with server for resume information. May take awhile...")
+            #Gray out the Upload button while we check with the server.
+            self.uploadB['state'] = 'disabled'
+            self.quitB['state'] = 'disabled'
+            self.update()
             try:
                 req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)})
+                self.uploadB['state'] = 'active'
+                self.quitB['state'] = 'active'
                 try:
                     #Replace the meta returned from the server with this one.
                     meta    = pickle.loads(req.text.encode("utf-8"))
@@ -480,10 +486,15 @@ class UploadWindow(tk.Frame):
                     chunkMD5 = hashlib.md5(chunk).hexdigest()
                     if resume:
                         manifestMD5sum = thisMeta.get('chunkManifest')[count]
-                        if md5sum == manifestMD5sum:
-                            skip = "Skipping chunk {0} of file {1}".format(count, fn)
+                        if chunkMD5 == manifestMD5sum:
+                            skip = "Skipping chunk {0} of file {1}. Checksum verified. ".format(count, fn)
                             self.status.set(skip)
                             log(skip)
+                            count += 1
+                            self.files[fn]['pb']['value'] = (float(count) / nChunks) * 100
+                            self.root.update()
+                            self.pauseB.update()
+                            self.rowQuit.update()
                             continue
                     else:
                         data['chunk'] = chunk
@@ -497,13 +508,12 @@ class UploadWindow(tk.Frame):
                         try:
                             result = pickle.loads(req.text)
                             if result['status'] == True:
+                                count += 1
                                 self.files[fn]['pb']['value'] = (float(count) / nChunks) * 100
                                 #Success of chunk upload and write
-                                count += 1
-                                print count
                                 self.root.update()
-
-                                self.pauseB.upadate()
+                                self.pauseB.update()
+                                self.filerow.update()
                                 self.rowQuit.update()
                             else:
                                 log(result['status'])
@@ -521,14 +531,16 @@ class UploadWindow(tk.Frame):
             #All chunks have been uploaded. Verify
             self.status.set('Verifying {0}'.format(fn))
             self.update()
-            del data['chunk']
-            del data['chunkMD5']
+            try:
+                del data['chunk']
+                del data['chunkMD5']
+            except KeyError:
+                pass
             eegFile.seek(0)
             fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
             eegFile.seek(0)
             data["fullMD5"] = fullMD5
             req = requests.post(uploadURL, files={"data":pickle.dumps(data)})
-            debug()
             if req.text == 'verified':
                 self.files[fn]["serverstatus"].set("upload verified")
                 meta['files'][fn]['serverstatus'] = "upload verified"
