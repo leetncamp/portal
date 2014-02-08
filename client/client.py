@@ -261,7 +261,7 @@ class UploadWindow(tk.Frame):
         self.quitB = tk.Button(self.rowQuit, text="Quit", command=self.exit)
         self.quitB.grid(row=0, column=1, sticky=tk.E)
         self.paused = False
-        self.pauseB = tk.Button(self.rowQuit, text="Pause", command=self.pause)
+        self.pauseB = tk.Button(self.rowQuit, text="Pause", command=self.set_paused)
         self.debugB = tk.Button(self.rowQuit, text="Debug", command=self.debugger)
         self.debugB.grid(row=0, column=3, sticky=tk.E)
         
@@ -317,10 +317,12 @@ class UploadWindow(tk.Frame):
         
 
         
-    def pause(self):
-        debug()
+    def set_paused(self):
+        
         self.paused = not self.paused
-        self.pauseB['text'] = "Cont" if self.paused else "Pause"
+        self.root.update()
+        return
+        
     
     def updateMetaFromForm(self):
         
