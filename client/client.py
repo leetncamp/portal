@@ -202,6 +202,7 @@ class UploadWindow(tk.Frame):
         self.outsidePad = tk.Frame(self.root, padx=10, pady=10)
         #Company name and clinician name
         self.files      = OrderedDict()
+        self.filerow    = 1
         self.row1       = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Upload Information", padx=5, pady=5)
         self.clinician  = tk.StringVar()
         self.clinicianL = tk.Label(self.row1, text="Clinician Name")
@@ -239,7 +240,21 @@ class UploadWindow(tk.Frame):
         self.drawFiles()
         self.filegroup.pack()
 
+        #Quit/Upload
+        self.rowQuit  = tk.Frame(self.outsidePad, bg="#ffffff")
+        self.uploadB = tk.Button(self.rowQuit, text="Upload", command=self.quit)
+        self.uploadB.grid(row=0, column=0, sticky=tk.E)
+        self.quitB = tk.Button(self.rowQuit, text="Quit", command=self.quit)
+        self.quitB.grid(row=0, column=1, sticky=tk.W)
+
         
+        self.rowQuit.pack()
+        
+        #Status bar
+        
+        self.rowStatus = tk.Frame(self.root, bg="#ffffff")
+        self.statusL = tk.Label(self.rowStatus, text="Starting up.")
+        self.pack(expand=1, fill=tk.BOTH)
         
         self.outsidePad.pack()
         self.pack()
@@ -255,33 +270,35 @@ class UploadWindow(tk.Frame):
             column += 1
     
     def drawFiles(self):
-        row = 1
+        
         for fn in meta['files']:
             thisFile                   = {}
             info                       = meta['files'][fn]
             thisFile['nameL']          = tk.Label(self.filegroup, text=fn)
-            thisFile['nameL'].grid(row = row, column=0, sticky=tk.W)
+            thisFile['nameL'].configure(font=self.font)
+            thisFile['nameL'].grid(row = self.filerow, column=0, sticky=tk.W)
             """The file's datestamp is in La Jolla time. Convert it to iBrain's local time"""
             localstamp                 = info['ctime'].replace(tzinfo=lajolla).astimezone(tzlocal())
             thisFile['dateL']          = tk.Label(self.filegroup, text=localstamp.strftime("%b %d, %Y %I:%M %p"))
-            thisFile['dateL'].grid(row = row, column=1, sticky=tk.W)
+            thisFile['dateL'].grid(row = self.filerow, column=1, sticky=tk.W)
             thisFile['patientID']      = tk.StringVar()
             thisFile['patientIDE-m']   = tk.Entry(self.filegroup, textvariable=thisFile['patientID'], width=15)
             thisFile['patientIDE']     = tk.Entry(self.filegroup, textvariable=self.patientID, width=15) 
             if self.patientID.get():
                 #Uploading for multiple patients. Show the Entry widget here.
-                thisFile['patientIDE-m'].grid(row=row, column=2, sticky=tk.W)
+                thisFile['patientIDE-m'].grid(row=self.filerow, column=2, sticky=tk.W)
             else:
-                thisFile['patientIDE'].grid(row=row, column=2, sticky=tk.W)
+                thisFile['patientIDE'].grid(row=self.filerow, column=2, sticky=tk.W)
             thisFile['notes'] = tk.StringVar()
             thisFile['notesL'] = tk.Entry(self.filegroup, textvariable = thisFile['notes'], width=25)
-            thisFile['notesL'].grid(row=row, column=3)
+            thisFile['notesL'].grid(row=self.filerow, column=3)
             thisFile['uploadVal'] = tk.IntVar()
             thisFile['upload'] = tk.Checkbutton(self.filegroup, variable=thisFile['uploadVal'])
-            thisFile['upload'].grid(row=row, column=4)
+            thisFile['upload'].grid(row=self.filerow, column=4)
             thisFile['pb'] = ttk.Progressbar(self.filegroup, mode='determinate')
-            thisFile['pb'].grid(row=row, column=5)
+            thisFile['pb'].grid(row=self.filerow, column=5)
             self.files[fn] = thisFile
+            self.filerow += 1
             
 
     def goSinglePatient(self):
@@ -296,7 +313,7 @@ class UploadWindow(tk.Frame):
         row=1
         for fn in self.files:
             self.files[fn]["patientIDE-m"].grid_forget()
-            self.files[fn]['patientIDE'].grid(row=row, column=2)
+            self.files[fn]['patientIDE'].grid(row=self.filerow, column=2)
             row += 1
         
     
@@ -311,7 +328,7 @@ class UploadWindow(tk.Frame):
         row=1
         for fn in self.files:
             self.files[fn]["patientIDE"].grid_forget()
-            self.files[fn]['patientIDE-m'].grid(row=row, column=2)
+            self.files[fn]['patientIDE-m'].grid(row=self.filerow, column=2)
             row += 1
         
         
@@ -363,8 +380,11 @@ if __name__ == "__main__":
     
     """Open the Tk Window"""
     root = tk.Tk()
+    root.geometry(meta.get("geometry", ""))
     app = UploadWindow(root)
-     
+
+    
+    meta['geometry'] = root.geometry()
     pickle.dump(meta, file("metadata.pickle", "wb"))
         
     
