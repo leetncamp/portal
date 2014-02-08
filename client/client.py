@@ -205,15 +205,16 @@ class UploadWindow(tk.Frame):
         self.filerow    = 1
         self.row1       = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Upload Information", padx=5, pady=5)
         self.clinician  = tk.StringVar()
+        self.clinician.set(meta['uploadInfo'].get('clinician', ""))
         self.clinicianL = tk.Label(self.row1, text="Clinician Name")
         #create an underline font using the default font in label
         self.font = tkFont.Font(self.clinicianL, self.clinicianL.cget("font"))
         self.font.configure(underline=True)
-        
         self.clinicianL.grid(row=0, column=0)
         self.clinicianE = tk.Entry(self.row1, textvariable=self.clinician, width=30)
         self.clinicianE.grid(row=0, column=1)
         self.company  = tk.StringVar()
+        self.company.set(meta['uploadInfo'].get('company', ""))
         self.companyL = tk.Label(self.row1, text="Company Name")
         self.companyL.grid(row=0, column=2)
         self.companyE = tk.Entry(self.row1, textvariable=self.company, width=30)
@@ -227,12 +228,14 @@ class UploadWindow(tk.Frame):
         self.pidCheckbox = tk.Checkbutton(self.row1, text="Uploading data for multiple patients", variable=self.pidCheck, command=self.checkbox)
         self.pidCheckbox.grid(row=1, column=1, sticky=tk.W)
         self.patientID   = tk.StringVar()
-        if not self.pidCheck.get():
-            self.patientID.set(meta['uploadInfo'].get("patientID", ""))
+        self.patientID.set(meta['uploadInfo'].get("patientID", ""))
         self.patientIDL  = tk.Label(self.row1, text="Patient ID")
         self.patientIDE  = tk.Entry(self.row1, textvariable=self.patientID, width=30)
         self.multipleIDL = tk.Label(self.row1, text="Enter patient ID's for each file below.")
-        self.goSinglePatient()
+        if self.pidCheck.get():
+            self.goMultiplePatient()
+        else:
+            self.goSinglePatient()
         self.row1.pack()
         
         #File list
@@ -246,26 +249,28 @@ class UploadWindow(tk.Frame):
         #Quit/Upload
         self.rowQuit  = tk.Frame(self.outsidePad, bg="#ffffff")
         self.uploadB = tk.Button(self.rowQuit, text="Upload", command=self.upload)
-        self.uploadB.grid(row=0, column=0, sticky=tk.E)
+        self.uploadB.grid(row=0, column=0, sticky=tk.W)
         self.quitB = tk.Button(self.rowQuit, text="Quit", command=self.exit)
-        self.quitB.grid(row=0, column=1, sticky=tk.W)
+        self.quitB.grid(row=0, column=1, sticky=tk.E)
 
         
         
         
         #Status bar
         
-        self.rowStatus = tk.Frame(self.root, bg="#ffffff")
-        self.statusL = tk.Label(self.rowStatus, text="Starting up.")
-        self.pack(expand=1, fill=tk.BOTH)
+        self.rowStatus = tk.Frame(self.root)
+        self.status = tk.Label(self.rowStatus, bd=1, relief=tk.SUNKEN, anchor=tk.W, text="Starting up", bg="#ddd", padx=10)
+        self.status.pack(fill=tk.X, padx=0, pady=2)
+        
         
         #Set the values of the widgets from meta
         
 
         
         #Display the widgets
-        self.rowQuit.pack()
+        self.rowQuit.pack(fill=tk.X)
         self.outsidePad.pack()
+        self.rowStatus.pack(fill=tk.X)
         self.pack()
         self.mainloop()
     
@@ -274,6 +279,9 @@ class UploadWindow(tk.Frame):
         """transfer data from the tkinter form widgets into the meta dictionary"""
         
         meta['uploadInfo']['multiple'] = self.pidCheck.get()
+        meta['uploadInfo']['clinician'] = self.clinician.get()
+        meta['uploadInfo']['company'] = self.company.get()
+        meta['uploadInfo']['patientID'] = self.patientID.get()
         if not meta['uploadInfo']['multiple']:
             meta['uploadInfo']['patientID'] = self.patientID.get()
         for fn in self.files:
@@ -381,7 +389,7 @@ if __name__ == "__main__":
         if "ask" in sys.argv:
             META['uploadInfo']['company'] = askCompany()
         else:
-            META['uploadInfo']['company'] = None
+            META['uploadInfo']['company'] = ""
         
     """For each EEG file add it's length, ctime and other metadata to the
     metadata structure."""
@@ -394,7 +402,13 @@ if __name__ == "__main__":
     point in trying to check the upload status."""
     
     if  META['uploadInfo']['company']:
-        req = requests.post(checkstatus, files={"meta":pickle.dumps(META)})
+        try:
+            req = requests.post(checkstatus, files={"meta":pickle.dumps(META)})
+        except Exception as e:
+            if "Connection refused" in str(e):
+                message = "Could not connect to the server {0}".format(server)
+                log(message)
+                sys.exit(1)
         try:
             meta    = pickle.loads(req.text.encode("utf-8"))
             message = meta.get('message', "")
