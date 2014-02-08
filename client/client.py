@@ -200,27 +200,27 @@ class UploadWindow(tk.Frame):
     def __init__(self, root, *args, **kwargs):
         global meta
         self.root = root
-        tk.Frame.__init__(self, root, *args, bg="#ffffff", padx=10, pady=10, **kwargs)
+        tk.Frame.__init__(self, root, *args, bg="#ffffff", padx=10, pady=10,  **kwargs)
         self.root.title("Neurovigil EEG Uploader")
-        self.outsidePad = tk.Frame(self.root, padx=10, pady=10, )
+        self.outsidePad = tk.Frame(self.root, padx=10, pady=10)
         #Company name and clinician name
         self.files      = OrderedDict()
         self.filerow    = 1
-        self.row1       = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Upload Information", padx=5, pady=5)
+        self.top       = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Upload Information", padx=5, pady=5)
         self.clinician  = tk.StringVar()
         self.clinician.set(meta['uploadInfo'].get('clinician', ""))
-        self.clinicianL = tk.Label(self.row1, text="Clinician Name")
+        self.clinicianL = tk.Label(self.top, text="Clinician Name")
         #create an underline font using the default font in label
         self.font = tkFont.Font(self.clinicianL, self.clinicianL.cget("font"))
         self.font.configure(underline=True)
         self.clinicianL.grid(row=0, column=0)
-        self.clinicianE = tk.Entry(self.row1, textvariable=self.clinician, width=30)
+        self.clinicianE = tk.Entry(self.top, textvariable=self.clinician, width=30)
         self.clinicianE.grid(row=0, column=1)
         self.company  = tk.StringVar()
         self.company.set(meta['uploadInfo'].get('company', ""))
-        self.companyL = tk.Label(self.row1, text="Company Name")
+        self.companyL = tk.Label(self.top, text="Company Name")
         self.companyL.grid(row=0, column=2)
-        self.companyE = tk.Entry(self.row1, textvariable=self.company, width=30)
+        self.companyE = tk.Entry(self.top, textvariable=self.company, width=30)
         self.companyE.grid(row=0, column=3)
         
         
@@ -228,25 +228,25 @@ class UploadWindow(tk.Frame):
 
         self.pidCheck    = tk.IntVar()
         self.pidCheck.set(meta['uploadInfo'].get("multiple", 0))
-        self.pidCheckbox = tk.Checkbutton(self.row1, text="Uploading data for multiple patients", variable=self.pidCheck, command=self.checkbox)
+        self.pidCheckbox = tk.Checkbutton(self.top, text="Uploading data for multiple patients", variable=self.pidCheck, command=self.checkbox)
         self.pidCheckbox.grid(row=1, column=1, sticky=tk.W)
         self.patientID   = tk.StringVar()
         self.patientID.set(meta['uploadInfo'].get("patientID", ""))
-        self.patientIDL  = tk.Label(self.row1, text="Patient ID")
-        self.patientIDE  = tk.Entry(self.row1, textvariable=self.patientID, width=30)
-        self.multipleIDL = tk.Label(self.row1, text="Enter patient ID's for each file below.")
+        self.patientIDL  = tk.Label(self.top, text="Patient ID")
+        self.patientIDE  = tk.Entry(self.top, textvariable=self.patientID, width=30)
+        self.multipleIDL = tk.Label(self.top, text="Enter patient ID's for each file below.")
         if self.pidCheck.get():
             self.goMultiplePatient()
         else:
             self.goSinglePatient()
-        self.row1.pack(fill=tk.BOTH)
+        self.top.pack()
         
         #File list
         self.filegroup = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Files", padx=10, pady=10)
         self.headings = ["File", "Date", "PatientID", "Notes", "Upload", "Server Status", "Upload Progress"]
         self.drawHeadings()
         self.drawFiles()
-        self.filegroup.pack(fill=tk.BOTH)
+        self.filegroup.pack(expand=1)
 
         #Quit/Upload
         self.rowQuit  = tk.Frame(self.outsidePad, bg="#ffffff")
@@ -265,7 +265,7 @@ class UploadWindow(tk.Frame):
         #Display the all the widgets
         self.rowQuit.pack(fill=tk.X)
         self.outsidePad.pack()
-        self.rowStatus.pack(fill=tk.X)
+        self.rowStatus.pack(fill=tk.X, side=tk.BOTTOM)
         self.pack()
         self.update()
         
@@ -273,6 +273,7 @@ class UploadWindow(tk.Frame):
         size = re.search(sizeRE, self.root.geometry()).group(1)
         position = re.search(positionRE, meta.get('geometry', "+10+10")).group(1)
         self.root.geometry(size+position)
+        self.root.geometry("")
         
         """Send the meta to the server. If company name is missing, there isn't
         any point in trying to check the upload status. In that case, we'll
@@ -280,6 +281,9 @@ class UploadWindow(tk.Frame):
     
         if self.company.get():
             debug()
+            self.drawFiles()
+            debug()
+            self.drawFiles()
             self.status.set("Checking with the server...")
             try:
                 req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)})
