@@ -273,6 +273,7 @@ class UploadWindow(tk.Frame):
         size = re.search(sizeRE, self.root.geometry()).group(1)
         position = re.search(positionRE, meta.get('geometry', "+10+10")).group(1)
         self.root.geometry(size+position)
+        #Unset the geometry so the parent window will continue to resize itself.
         self.root.geometry("")
         
         """Send the meta to the server. If company name is missing, there isn't
