@@ -117,6 +117,7 @@ class Catch():
             self.instance.quitButton['text'] = "Quit"
             log("Caught exception. Enabling the Quit and Upload buttons.")
             self.clear_buttons_from_upload()
+            self.paused = False
             self.instance.status.set("Problem uploading. You may press Upload again to retry.")
             log(type)
             errors += str(type) + "\n"
@@ -204,7 +205,7 @@ class UploadWindow(tk.Frame):
     def __init__(self, root, *args, **kwargs):
         global meta
         self.root = root
-        self.paused = False
+        self.pause = False
         tk.Frame.__init__(self, root, *args, bg="#ffffff", padx=10, pady=10,  **kwargs)
         self.root.title("Neurovigil EEG Uploader")
         self.outsidePad = tk.Frame(self.root, padx=10, pady=10)
@@ -317,8 +318,9 @@ class UploadWindow(tk.Frame):
 
         
     def pause(self):
-        self.paused = True
-
+        debug()
+        self.paused = not self.paused
+        self.pauseB['text'] = "Cont" if self.paused else "Pause"
     
     def updateMetaFromForm(self):
         
@@ -468,7 +470,6 @@ class UploadWindow(tk.Frame):
             resume = thisMeta["serverstatus"] == "resume needed"
             for chunk in chunks(eegFile):
                 if self.paused:
-                    debug()
                     self.clear_buttons_from_upload()
                     self.paused = False
                     self.status.set("Ready")
@@ -497,8 +498,11 @@ class UploadWindow(tk.Frame):
                                 self.files[fn]['pb']['value'] = (float(count) / nChunks) * 100
                                 #Success of chunk upload and write
                                 count += 1
-                                print self.paused
+                                print count
                                 self.root.update()
+
+                                self.pauseB.upadate()
+                                self.rowQuit.update()
                             else:
                                 log(result['status'])
                                 self.status.set(result['status'])
