@@ -487,97 +487,146 @@ def verifyfile(request):
 
 @csrf_exempt
 def bUpload(request):
+
+    "binary Upload"
+    
     request._load_post_and_files()
-    filename = safe_filename(request._files['filename'].read())
-    metaStr = request._files['metadata'].read()
-    appMeta = json.loads(metaStr)
-    #Store data in folders based on userName 
-    folder = appMeta.get("userName")
+    data = pickle.loads(request._files['data'].read())
+    meta = data['meta']
+    filename = safe_filename(data['file'])
+    folder = meta['uploadInfo'].get("company", "")
     working_folder = os.path.join(upload_dir, folder)
-    try:
-        os.makedirs(working_folder)
-    except OSError:
-        pass
     filepath = os.path.join(working_folder, filename)
-    count = request._files['count'].read()
-    if count == "0":
+    
+    
+    
+    #if there is a fullMD5 key, then 
+    fullMD5 = data.get("fullMD5", None)
+    if fullMD5:
+        #This is a request to verify the fullmd5 on an existing upload.
+        myMD5 = hashlib.md5(open(filepath, "rb").read()).hexdigest()
+        if myMD5 == fullMD5:
+            return HttpResponse("verified", mimetype="application/binary")
+        else:
+            return HttpResponse("verified", mimetype="application/binary")
+    
+    #Store data in folders based on company name 
+    
+    if folder:
+        
         try:
-            os.remove(filepath)
+            os.makedirs(working_folder)
         except OSError:
             pass
+        
+        count = data['count']
+        if count == 0:
+            try:
+                os.remove(filepath)
+            except OSError:
+                pass
     
-    chunk = request._files['file'].read()
-    md5SUM = request._files['md5sum'].read()
-    md5sum = hashlib.md5(chunk).hexdigest()
-    success = md5SUM == md5sum
-    if success:
-        destFile = file(filepath, 'ab').write(zlib.decompress(chunk))
-    data = {"status": success}
-    return HttpResponse(json.dumps(data), mimetype='application/json')
+        chunk = data['chunk']
+        chunkMD5 = data['chunkMD5']
+        md5sum = hashlib.md5(chunk).hexdigest()
+        success = chunkMD5 == md5sum
 
-def verify_1_0(meta, version):
+        if success:
+            try:
+                destFile = file(filepath, 'ab').write(zlib.decompress(chunk))
+                filewritten = True
+            except Exception as e:
+                filewritten = False
+            result = {"status": success and filewritten}
+    else:
+        result = {"status": "failed due to lack of Company name"}
+    return HttpResponse(pickle.dumps(result), mimetype='application/binary')
 
-    """We recieve a dictionary that contains metadata about the upload and then
-    more metadata about each file. The dictionary looks like this. Our job here
-    is to check to see if the file needs to be uploaded based on file size. 
-    
-    
-    META = { 
-        "uploadInfo": {
-            "clinician": "",
-            "company": "",
-            "VERSION": VERSION
-            "localtimezone": "America/Los_Angeles",
-        },
-        "files": [
-            {"EEG.txt": {
-                "length": 100,
-                "header": "Neurovigil\nFirmwareVersion\n...",
-                "uploaded": None,
-                "notes": "These are the notes for this file.",
-                "uploaded": datetimeobj, # (or none)
-                "md5sum": "string",
-                "patientID": "string",
-                "ctime": datetimeobj,
-                "mtime": datetimeobj,
-            }},
-            {"EEG1.txt": {
-                "length": 100,
-                "header": "Neurovigil\nFirmwareVersion\n...",
-                "uploaded": None,
-                "notes": "These are the notes for this file.",
-            }}
-        ]
-    }
-    
-    
-    """
 
-    files = meta['files']
-    data_dir = os.path.join(upload_dir, meta['uploadInfo']['company'])
-    for fn in files:
-        thisFile = files[fn]
-        try:
-            f = open(os.path.join(data_dir, fn), "rb")
-            f.seek(0,2)
-            length = f.tell()
-            length = thisFile['length']
-            thisFile['serverstatus'] = "uploaded" if length == thisFile['length'] else "upload needed"
-        except IOError:
-            thisFile['serverstatus'] = "upload needed"
 
-    return HttpResponse(pickle.dumps(meta), mimetype='application/binary')    
-            
 
 
 
 @csrf_exempt    
-def verify(request, version=None):
+def checkstatus(request, version=None):
     request._load_post_and_files()
     meta = pickle.loads(request._files['meta'].read())
     version = float(version)
     if version >.85 and version < 2.0:
-        return(verify_1_0(meta, version))
+
+        """We recieve a dictionary that contains metadata about each file and then
+        add more metadata about each file. The dictionary looks like this. Our
+        job here is to check to see if the file needs to be uploaded based on
+        file size. If the file can be resumed, send a manifest of md5
+        signatures on the chunks.
+    
+    
+        META = { 
+            "uploadInfo": {
+                "clinician": "",
+                "company": "",
+                "VERSION": VERSION
+                "localtimezone": "America/Los_Angeles",
+            },
+            "files": [
+                {"EEG.txt": {
+                    "length": 100,
+                    "header": "Neurovigil\nFirmwareVersion\n...",
+                    "uploaded": None,
+                    "notes": "These are the notes for this file.",
+                    "uploaded": datetimeobj, # (or none)
+                    "md5sum": "string",
+                    "patientID": "string",
+                    "ctime": datetimeobj,
+                    "mtime": datetimeobj,
+                }},
+                {"EEG1.txt": {
+                    "length": 100,
+                    "header": "Neurovigil\nFirmwareVersion\n...",
+                    "uploaded": None,
+                    "notes": "These are the notes for this file.",
+                }}
+            ]
+        }
+    
+    
+        """
+
+        files = meta['files']
+        data_dir = os.path.join(upload_dir, meta['uploadInfo']['company'])
+        for fn in files:
+            thisFile = files[fn]
+            try:
+                f = open(os.path.join(data_dir, fn), "rb")
+                f.seek(0,2)
+                length = f.tell()
+                length = thisFile['length']
+                thisFile['serverstatus'] = "uploaded" if length == thisFile['length'] else "resume needed"
+                if thisFile['serverstatus'] == "resume needed":
+                    #This file can be resumed. Send a chunksmanifest.
+                    chunkSize = meta['uploadInfo']['chunkSize']
+                    chunkManifest = {}
+                    length = 0
+                    count = 0
+                    try:
+                        f.seek(0)
+                        fullMD5 = hashlib.md5(f.read()).hexdigest()
+                        f.seek(0)
+                        try:
+                            for chunk in chunks(f):
+                                chunkManifest[count] = hashlib.md5(chunk).hexdigest()
+                                count += 1
+                            thisfile['chunkManifest'] = chunkManifest
+                        except Exception as e:
+                            debug()
+                    except IOError:
+                        pass
+                
+            except IOError:
+                thisFile['serverstatus'] = "upload needed"
+
+        return HttpResponse(pickle.dumps(meta), mimetype='application/binary')    
+        
     else:
         data={"status":"version not supported", "message":"This version of the uploader, {0}, is not supported by the upload server.".format(version)}
         return HttpResponse(pickle.dumps(data), mimetype='application/binary')

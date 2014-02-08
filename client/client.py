@@ -36,7 +36,7 @@ import time
 import os
 import math
 import requests
-import json
+
 import pickle
 import zlib
 import hashlib
@@ -63,8 +63,8 @@ try:
 except IndexError:
     pass
 
-url = "{0}/bupload".format(server)
-checkstatus = "{0}/verify/{1}".format(server, VERSION)
+uploadURL = "{0}/bupload".format(server)
+checkstatus = "{0}/checkstatus/{1}".format(server, VERSION)
 
 globRE = re.compile("eeg", re.I)
 errors =  ""
@@ -90,9 +90,14 @@ log(now())
 log(cwd)
 log(server)
 
+
+uname = os.uname()
+OS = uname[1]
+
 def open_req(req):
-    file('delme.html', "wb").write(req.text.encode('utf-8'))
-    os.system("open delme.html")
+    if OS=="Darwin":
+        file('delme.html', "wb").write(req.text.encode('utf-8'))
+        os.system("open delme.html")
     return
 
 def chunks(fileObj):
@@ -200,6 +205,7 @@ class UploadWindow(tk.Frame):
     def __init__(self, root, *args, **kwargs):
         global meta
         self.root = root
+        self.pause = False
         tk.Frame.__init__(self, root, *args, bg="#ffffff", padx=10, pady=10,  **kwargs)
         self.root.title("Neurovigil EEG Uploader")
         self.outsidePad = tk.Frame(self.root, padx=10, pady=10)
@@ -254,6 +260,8 @@ class UploadWindow(tk.Frame):
         self.uploadB.grid(row=0, column=0, sticky=tk.W)
         self.quitB = tk.Button(self.rowQuit, text="Quit", command=self.exit)
         self.quitB.grid(row=0, column=1, sticky=tk.E)
+        self.debugB = tk.Button(self.rowQuit, text="Debug", command=self.debugger)
+        self.debugB.grid(row=0, column=2, sticky=tk.E)
         
         #Status bar
         self.rowStatus = tk.Frame(self.root)
@@ -274,10 +282,7 @@ class UploadWindow(tk.Frame):
         check after the upload button is pushed."""
     
         if self.company.get():
-            debug()
-            self.drawFiles()
-            debug()
-            self.drawFiles()
+
             self.status.set("Checking with the server...")
             try:
                 req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)})
@@ -287,12 +292,18 @@ class UploadWindow(tk.Frame):
                     message = meta.get('message', "")
                     status  = meta.get('status', "")
                     
-                    #Update the server status of each of the files.
+                    self.status.set("Updating files with information from server...")
+                    for fn in self.files:
+                        metafile = meta['files'].get(fn, {})
+                        serverstatus = metafile.get("serverstatus")
+                        self.files[fn]['serverstatus'].set(serverstatus)
+                        if serverstatus == "uploaded":
+                            self.files[fn]['upload'].set(0)
+                    self.status.set("")
                 except Exception as e:
-                    if os.uname()[1] == "Darwin":
-                        message = open_req(req)
-                    log.message()
-                    self.status.set("unexpected result from server")
+                    open_req(req)
+                    log(req.text)
+                    self.status.set("unexpected result from server {0}".format(server))
             except Exception as e:
                 if "Connection refused" in str(e):
                     message = "Could not connect to the server {0}".format(server)
@@ -353,11 +364,11 @@ class UploadWindow(tk.Frame):
             thisFile['notes'] = tk.StringVar()
             thisFile['notesL'] = tk.Entry(self.filegroup, textvariable = thisFile['notes'], width=25)
             thisFile['notesL'].grid(row=self.filerow, column=3, padx=10)
-            thisFile['uploadVal'] = tk.IntVar()
+            thisFile['upload'] = tk.IntVar()
             #Default to true. We will set to false later if needed
-            thisFile['uploadVal'].set(1) 
-            thisFile['upload'] = tk.Checkbutton(self.filegroup, variable=thisFile['uploadVal'])
-            thisFile['upload'].grid(row=self.filerow, column=4, padx=10)
+            thisFile['upload'].set(1) 
+            thisFile['uploadCB'] = tk.Checkbutton(self.filegroup, variable=thisFile['upload'])
+            thisFile['uploadCB'].grid(row=self.filerow, column=4, padx=10)
             thisFile['serverstatus'] = tk.StringVar()
             thisFile['serverstatus'].set(meta['files'][fn].get("serverstatus", "?"))
             thisFile['serverstatusL'] = tk.Label(self.filegroup, textvariable=thisFile['serverstatus'])
@@ -406,6 +417,112 @@ class UploadWindow(tk.Frame):
             self.goSinglePatient()
     
     def upload(self):
+
+        #Remove files that aren't checked.
+        uploadFiles = [ fn for fn in self.files if self.files[fn]["upload"].get() ]
+        for fn in uploadFiles:
+            thisMeta = meta["files"][fn]
+            baseStatus = "Uploading {0}...".format(fn)
+            self.status.set(baseStatus)
+            eegFile = open(fn, 'rb')
+            eegFile.seek(0, 2)
+            length = eegFile.tell()
+            if length == 0:
+                #If the file is empty, it will appear as unverified. Skip it.
+                errors += "{0} is empty. Skipping.\n".format(eegFile.name)
+                break
+            nChunks = int(math.ceil(length / float(chunkSize)))
+            data = {}
+            data['file'] = eegFile.name
+            data['meta'] = meta
+            count = 0
+            errors = ""
+            eegFile.seek(0)
+            for chunk in chunks(eegFile):
+                if not self.pause:
+                    md5sum = hashlib.md5(chunk).hexdigest()
+                    if thisMeta["serverstatus"] == "resume needed":
+                        manifestMD5sum = thisMeta.get('chunkManifest')[count]
+                        if md5sum == manifestMD5sum:
+                            skip = "Skipping chunk {0} of file {1}".format(count, fn)
+                            self.status.set(skip)
+                            log(skip)
+                            continue
+                    else:
+                        data['chunk'] = chunk
+                        data["chunkMD5"] = md5sum
+                        #with Catch(self):
+                            #if this fails, the Catch will re-enable
+                            #Quit button
+
+                        data['count'] = count
+                        req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=False)
+                        try:
+                            result = pickle.loads(req.text)
+                            if result['status'] == True:
+                                self.files[fn]['pb']['value'] = (float(count) / nChunks) * 100
+                                #Success!
+                                count += 1
+                            else:
+                                log(result['status'])
+                                self.status.set(result['status'])
+                        except:
+                            open_req(req)
+                            errors += req.text + "\n\n"                        
+                        self.root.update()
+                else:
+                    self.upload['state'] = "enabled"
+                    self.pause = False
+                    self.quitB['text'] = "Quit"
+                    return
+            
+            #All chunks have been uploaded. Verify
+            self.status.set('Verifying {0}'.format(fn))
+            self.update()
+            del data['chunk']
+            del data['chunkMD5']
+            eegFile.seek(0)
+            fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
+            eegFile.seek(0)
+            data["fullMD5"] = fullMD5
+            req = requests.post(uploadURL, files={"data":pickle.dumps(data)})
+            if req.text == 'verified':
+                log("Verified upload of  {0}".format(eegFile.name))
+                self.files[fn]['serverstatus'] = "uploaded"
+            else:
+                log("Verification of {0} failed!".format(eegFile.name))
+                self.status.set("Verification of {0} failed!".format(eegFile.name))
+                #self.quitButton['text'] = "Quit"
+                #self.goButton['text'] = "Done"
+            log(req.text)
+
+
+        self.quitB['text'] = "Quit"
+        self.uploadB['state'] = "disabled"
+        #Upload the errors text thing.
+        del data['fullMD5']
+        data["errors"] =  errors
+        req = requests.post(uploadURL, files={"data":pickle.dumps(data)})
+        if len(errors) > 0:
+            tkMessageBox.showwarning("ALERT", errors)
+        self.status.set("All files uploaded. Press Quit to exit.")
+        self.uploadB['command'] = self.quit
+        #archiveFolder = "uploaded-{0}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H_%M"))
+        #try:
+        #    os.mkdir(archiveFolder)
+        #    log("Setting archive folder to {0}.".format(archiveFolder))
+        #except OSError:
+        #    pass
+        #for fn in self.fileList:
+        #    log("Archiving {0}.".format(fn))
+        #    os.rename(fn, os.path.join(archiveFolder, fn))
+        #self.status.set("All files uploaded and archived to {0}. Press Quit to exit.".format(archiveFolder))
+        self.root.update()
+        
+
+################################################################################
+    
+    def debugger(self):
         debug()
     
     def exit(self):
@@ -426,6 +543,8 @@ if __name__ == "__main__":
             meta['uploadInfo']['company'] = askCompany()
         else:
             meta['uploadInfo']['company'] = ""
+    
+    meta['uploadInfo']['chunkSize'] = chunkSize
         
     """For each EEG file add it's length, ctime and other metadata to the
     metadata dictionary refreshing any dictionary structures for files that
