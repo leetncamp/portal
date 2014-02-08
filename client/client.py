@@ -269,13 +269,6 @@ class UploadWindow(tk.Frame):
         self.pack()
         self.update()
         
-        #Move the window to the same position it was last time.
-        size = re.search(sizeRE, self.root.geometry()).group(1)
-        position = re.search(positionRE, meta.get('geometry', "+10+10")).group(1)
-        self.root.geometry(size+position)
-        #Unset the geometry so the parent window will continue to resize itself.
-        self.root.geometry("")
-        
         """Send the meta to the server. If company name is missing, there isn't
         any point in trying to check the upload status. In that case, we'll
         check after the upload button is pushed."""
@@ -451,6 +444,8 @@ if __name__ == "__main__":
     
     """Open the Tk Window"""
     root = tk.Tk()
+    root.geometry(meta.get("geometry", ""))
+    root.geometry("")
     app = UploadWindow(root)
     meta['geometry'] = root.geometry()
     pickle.dump(meta, file("metadata.pickle", "wb"))
