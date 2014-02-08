@@ -239,7 +239,7 @@ class UploadWindow(tk.Frame):
             self.goMultiplePatient()
         else:
             self.goSinglePatient()
-        self.row1.pack(fill=tk.BOTH, padx=20)
+        self.row1.pack(fill=tk.BOTH)
         
         #File list
         self.filegroup = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Files", padx=10, pady=10)
@@ -265,9 +265,9 @@ class UploadWindow(tk.Frame):
         #Display the all the widgets
         self.rowQuit.pack(fill=tk.X)
         self.outsidePad.pack()
-        self.rowStatus.pack(fill=tk.X, side=tk.BOTTOM)
+        self.rowStatus.pack(fill=tk.X)
         self.pack()
-
+        self.update()
         
         #Move the window to the same position it was last time.
         size = re.search(sizeRE, self.root.geometry()).group(1)
@@ -279,7 +279,7 @@ class UploadWindow(tk.Frame):
         check after the upload button is pushed."""
     
         if self.company.get():
-
+            debug()
             self.status.set("Checking with the server...")
             try:
                 req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)})
