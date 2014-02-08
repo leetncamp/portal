@@ -223,9 +223,12 @@ class UploadWindow(tk.Frame):
         #Patient ID
 
         self.pidCheck    = tk.IntVar()
+        self.pidCheck.set(meta['uploadInfo'].get("multiple", 0))
         self.pidCheckbox = tk.Checkbutton(self.row1, text="Uploading data for multiple patients", variable=self.pidCheck, command=self.checkbox)
         self.pidCheckbox.grid(row=1, column=1, sticky=tk.W)
         self.patientID   = tk.StringVar()
+        if not self.pidCheck.get():
+            self.patientID.set(meta['uploadInfo'].get("patientID", ""))
         self.patientIDL  = tk.Label(self.row1, text="Patient ID")
         self.patientIDE  = tk.Entry(self.row1, textvariable=self.patientID, width=30)
         self.multipleIDL = tk.Label(self.row1, text="Enter patient ID's for each file below.")
@@ -242,13 +245,13 @@ class UploadWindow(tk.Frame):
 
         #Quit/Upload
         self.rowQuit  = tk.Frame(self.outsidePad, bg="#ffffff")
-        self.uploadB = tk.Button(self.rowQuit, text="Upload", command=self.quit)
+        self.uploadB = tk.Button(self.rowQuit, text="Upload", command=self.upload)
         self.uploadB.grid(row=0, column=0, sticky=tk.E)
-        self.quitB = tk.Button(self.rowQuit, text="Quit", command=self.quit)
+        self.quitB = tk.Button(self.rowQuit, text="Quit", command=self.exit)
         self.quitB.grid(row=0, column=1, sticky=tk.W)
 
         
-        self.rowQuit.pack()
+        
         
         #Status bar
         
@@ -256,9 +259,28 @@ class UploadWindow(tk.Frame):
         self.statusL = tk.Label(self.rowStatus, text="Starting up.")
         self.pack(expand=1, fill=tk.BOTH)
         
+        #Set the values of the widgets from meta
+        
+
+        
+        #Display the widgets
+        self.rowQuit.pack()
         self.outsidePad.pack()
         self.pack()
         self.mainloop()
+    
+    def updateMetaFromForm(self):
+        
+        """transfer data from the tkinter form widgets into the meta dictionary"""
+        
+        meta['uploadInfo']['multiple'] = self.pidCheck.get()
+        if not meta['uploadInfo']['multiple']:
+            meta['uploadInfo']['patientID'] = self.patientID.get()
+        for fn in self.files:
+            meta['files'][fn]['patientID'] = self.files[fn]["patientID"].get()
+            meta['files'][fn]['notes'] = self.files[fn]["notes"].get()
+    
+        
         
     def drawHeadings(self):
         #First remove the ones that are there.
@@ -282,9 +304,10 @@ class UploadWindow(tk.Frame):
             thisFile['dateL']          = tk.Label(self.filegroup, text=localstamp.strftime("%b %d, %Y %I:%M %p"))
             thisFile['dateL'].grid(row = self.filerow, column=1, sticky=tk.W)
             thisFile['patientID']      = tk.StringVar()
+            thisFile['patientID'].set(meta['files'][fn].get("patientID", ""))
             thisFile['patientIDE-m']   = tk.Entry(self.filegroup, textvariable=thisFile['patientID'], width=15)
             thisFile['patientIDE']     = tk.Entry(self.filegroup, textvariable=self.patientID, width=15) 
-            if self.patientID.get():
+            if self.pidCheck.get():
                 #Uploading for multiple patients. Show the Entry widget here.
                 thisFile['patientIDE-m'].grid(row=self.filerow, column=2, sticky=tk.W)
             else:
@@ -313,7 +336,7 @@ class UploadWindow(tk.Frame):
         row=1
         for fn in self.files:
             self.files[fn]["patientIDE-m"].grid_forget()
-            self.files[fn]['patientIDE'].grid(row=self.filerow, column=2)
+            self.files[fn]['patientIDE'].grid(row=row, column=2)
             row += 1
         
     
@@ -328,7 +351,7 @@ class UploadWindow(tk.Frame):
         row=1
         for fn in self.files:
             self.files[fn]["patientIDE"].grid_forget()
-            self.files[fn]['patientIDE-m'].grid(row=self.filerow, column=2)
+            self.files[fn]['patientIDE-m'].grid(row=row, column=2)
             row += 1
         
         
@@ -337,8 +360,13 @@ class UploadWindow(tk.Frame):
             self.goMultiplePatient()
         else:
             self.goSinglePatient()
-
-        
+    
+    def upload(self):
+        debug()
+    
+    def exit(self):
+        self.updateMetaFromForm()
+        self.quit()        
 
 if __name__ == "__main__":
     
@@ -382,8 +410,6 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.geometry(meta.get("geometry", ""))
     app = UploadWindow(root)
-
-    
     meta['geometry'] = root.geometry()
     pickle.dump(meta, file("metadata.pickle", "wb"))
         
