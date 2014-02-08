@@ -200,9 +200,9 @@ class UploadWindow(tk.Frame):
     def __init__(self, root, *args, **kwargs):
         global meta
         self.root = root
-        tk.Frame.__init__(self, root, *args, bg="#ffffff", padx=10, pady=10,  **kwargs)
+        tk.Frame.__init__(self, root, *args, bg="#ffffff", padx=10, pady=10, **kwargs)
         self.root.title("Neurovigil EEG Uploader")
-        self.outsidePad = tk.Frame(self.root, padx=10, pady=10)
+        self.outsidePad = tk.Frame(self.root, padx=10, pady=10, )
         #Company name and clinician name
         self.files      = OrderedDict()
         self.filerow    = 1
@@ -239,14 +239,14 @@ class UploadWindow(tk.Frame):
             self.goMultiplePatient()
         else:
             self.goSinglePatient()
-        self.row1.pack()
+        self.row1.pack(fill=tk.BOTH, padx=20)
         
         #File list
         self.filegroup = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Files", padx=10, pady=10)
         self.headings = ["File", "Date", "PatientID", "Notes", "Upload", "Server Status", "Upload Progress"]
         self.drawHeadings()
         self.drawFiles()
-        self.filegroup.pack()
+        self.filegroup.pack(fill=tk.BOTH)
 
         #Quit/Upload
         self.rowQuit  = tk.Frame(self.outsidePad, bg="#ffffff")
@@ -257,42 +257,51 @@ class UploadWindow(tk.Frame):
         
         #Status bar
         self.rowStatus = tk.Frame(self.root)
-        self.status = tk.Label(self.rowStatus, bd=1, relief=tk.SUNKEN, anchor=tk.W, text="Starting up", bg="#ddd", padx=10)
-        self.status.pack(fill=tk.X, padx=0, pady=2)
+        self.status = tk.StringVar()
+        self.status.set("Starting up")
+        self.statusL = tk.Label(self.rowStatus, bd=1, relief=tk.SUNKEN, anchor=tk.W, bg="#ddd", padx=10, textvariable=self.status)
+        self.statusL.pack(fill=tk.X, padx=0, pady=2)
         
         #Display the all the widgets
         self.rowQuit.pack(fill=tk.X)
         self.outsidePad.pack()
-        self.rowStatus.pack(fill=tk.X)
+        self.rowStatus.pack(fill=tk.X, side=tk.BOTTOM)
         self.pack()
-        self.update()
+
         
         #Move the window to the same position it was last time.
         size = re.search(sizeRE, self.root.geometry()).group(1)
         position = re.search(positionRE, meta.get('geometry', "+10+10")).group(1)
         self.root.geometry(size+position)
         
-        """Send the meta to the server. If company name is missing, there isn't any
-        point in trying to check the upload status."""
+        """Send the meta to the server. If company name is missing, there isn't
+        any point in trying to check the upload status. In that case, we'll
+        check after the upload button is pushed."""
     
-        if  meta['uploadInfo']['company']:
+        if self.company.get():
+
+            self.status.set("Checking with the server...")
             try:
                 req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)})
+                try:
+                    #Replace the meta returned from the server with this one.
+                    meta    = pickle.loads(req.text.encode("utf-8"))
+                    message = meta.get('message', "")
+                    status  = meta.get('status', "")
+                    
+                    #Update the server status of each of the files.
+                except Exception as e:
+                    if os.uname()[1] == "Darwin":
+                        message = open_req(req)
+                    log.message()
+                    self.status.set("unexpected result from server")
             except Exception as e:
                 if "Connection refused" in str(e):
                     message = "Could not connect to the server {0}".format(server)
                     log(message)
-                    sys.exit(1)
-            try:
-                meta    = pickle.loads(req.text.encode("utf-8"))
-                message = meta.get('message', "")
-                status  = meta.get('status', "")
-            except Exception as e:
-                message = open_req(req)
-                meta  = "unexpected result from server"
-        else:
-            meta = meta
-        print meta
+                    self.status.set("SERVER CONNECTION REFUSED!!")
+                else:
+                    self.status.set(str(e))
         
         
         self.mainloop()
@@ -319,7 +328,7 @@ class UploadWindow(tk.Frame):
         for heading in self.headings:
             lab = tk.Label(self.filegroup, text=heading)
             lab.configure(font=self.font)
-            lab.grid(row=0, column=column, sticky=tk.W)
+            lab.grid(row=0, column=column, sticky=tk.W, padx=10)
             column += 1
     
     def drawFiles(self):
@@ -329,30 +338,34 @@ class UploadWindow(tk.Frame):
             info                       = meta['files'][fn]
             thisFile['nameL']          = tk.Label(self.filegroup, text=fn)
             thisFile['nameL'].configure(font=self.font)
-            thisFile['nameL'].grid(row = self.filerow, column=0, sticky=tk.W)
+            thisFile['nameL'].grid(row = self.filerow, column=0, sticky=tk.W, padx=10)
             """The file's datestamp is in La Jolla time. Convert it to iBrain's local time"""
             localstamp                 = info['ctime'].replace(tzinfo=lajolla).astimezone(tzlocal())
             thisFile['dateL']          = tk.Label(self.filegroup, text=localstamp.strftime("%b %d, %Y %I:%M %p"))
-            thisFile['dateL'].grid(row = self.filerow, column=1, sticky=tk.W)
+            thisFile['dateL'].grid(row = self.filerow, column=1, sticky=tk.W, padx=10)
             thisFile['patientID']      = tk.StringVar()
             thisFile['patientID'].set(meta['files'][fn].get("patientID", ""))
             thisFile['patientIDE-m']   = tk.Entry(self.filegroup, textvariable=thisFile['patientID'], width=15)
             thisFile['patientIDE']     = tk.Entry(self.filegroup, textvariable=self.patientID, width=15) 
             if self.pidCheck.get():
                 #Uploading for multiple patients. Show the Entry widget here.
-                thisFile['patientIDE-m'].grid(row=self.filerow, column=2, sticky=tk.W)
+                thisFile['patientIDE-m'].grid(row=self.filerow, column=2, sticky=tk.W, padx=10)
             else:
-                thisFile['patientIDE'].grid(row=self.filerow, column=2, sticky=tk.W)
+                thisFile['patientIDE'].grid(row=self.filerow, column=2, sticky=tk.W, padx=10)
             thisFile['notes'] = tk.StringVar()
             thisFile['notesL'] = tk.Entry(self.filegroup, textvariable = thisFile['notes'], width=25)
-            thisFile['notesL'].grid(row=self.filerow, column=3)
+            thisFile['notesL'].grid(row=self.filerow, column=3, padx=10)
             thisFile['uploadVal'] = tk.IntVar()
+            #Default to true. We will set to false later if needed
+            thisFile['uploadVal'].set(1) 
             thisFile['upload'] = tk.Checkbutton(self.filegroup, variable=thisFile['uploadVal'])
-            thisFile['upload'].grid(row=self.filerow, column=4)
-            thisFile['serverstatus'] = tk.Label(self.filegroup, text="?")
-            thisFile['serverstatus'].grid(row=self.filerow, column=5)
+            thisFile['upload'].grid(row=self.filerow, column=4, padx=10)
+            thisFile['serverstatus'] = tk.StringVar()
+            thisFile['serverstatus'].set(meta['files'][fn].get("serverstatus", "?"))
+            thisFile['serverstatusL'] = tk.Label(self.filegroup, textvariable=thisFile['serverstatus'])
+            thisFile['serverstatusL'].grid(row=self.filerow, column=5, padx=10)
             thisFile['pb'] = ttk.Progressbar(self.filegroup, mode='determinate')
-            thisFile['pb'].grid(row=self.filerow, column=6)
+            thisFile['pb'].grid(row=self.filerow, column=6, padx=10)
             self.files[fn] = thisFile
             self.filerow += 1
             

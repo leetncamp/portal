@@ -562,9 +562,9 @@ def verify_1_0(meta, version):
             f.seek(0,2)
             length = f.tell()
             length = thisFile['length']
-            thisFile['uploaded'] = length == thisFile['length']
+            thisFile['serverstatus'] = "uploaded" if length == thisFile['length'] else "upload needed"
         except IOError:
-            thisFile['uploaded'] = None
+            thisFile['serverstatus'] = "upload needed"
 
     return HttpResponse(pickle.dumps(meta), mimetype='application/binary')    
             
