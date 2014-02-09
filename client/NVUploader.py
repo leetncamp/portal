@@ -600,6 +600,7 @@ class UploadWindow(tk.Frame):
                         #Quit button
 
                     data['count'] = count
+                    with Catch as #here
                     req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=sslVerify)
                     try:
                         result = pickle.loads(req.text)
