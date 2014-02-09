@@ -22,6 +22,7 @@ import traceback
 import subprocess
 from snlmailer import Message
 from notify import notification_emails
+import copy
 
 import time
 import glob
@@ -409,18 +410,44 @@ def bUpload(request):
     errors = data.get('errors', None)
     if errors:
         errorpath = os.path.join(working_folder, "errors.txt")
-        file(errorpath, "rb").write(errors)
+        try:
+            file(errorpath, "rb").write(errors)
+            status = pickle.dumps("errors written")
+        except:
+            status = pickle.dumps("failed to write errors")
+        return HttpResponse(status, mimetype="application/binary")
     
     
-    #if there is a fullMD5 key, then 
+    """if there is a fullMD5 key, we are doing a verify. send back verification
+    notice and write out this file's metadata. """
+    
     fullMD5 = data.get("fullMD5", None)
     if fullMD5:
-        #This is a request to verify the fullmd5 on an existing upload.
+        
+        """Write out the metadata pickle and verify md5"""
+        
+        """The data dict contains info about all files. Remove unneeded
+        information and flatten the structure"""
+        
+        metapath = filepath + ".metadata.pickle"
+        #Make a copy of the original to prevent self reference as I flatten.
+        thisFilesMeta = copy.deepcopy(meta['files'][data['file']])
+        thisFilesData = copy.deepcopy(data)
+        del thisFilesData['meta']
+        thisFilesMeta.update(thisFilesData)
+        pickle.dump(thisFilesMeta, file(metapath, 'wb'))
+        #Remove from memory.
+        del thisFilesData
+        del thisFilesMeta
+        
+        """This is a request to verify the fullmd5 on an existing upload."""
+        
         myMD5 = hashlib.md5(open(filepath, "rb").read()).hexdigest()
         if myMD5 == fullMD5:
-            return HttpResponse("verified", mimetype="application/binary")
+            status = pickle.dumps("verified")
         else:
-            return HttpResponse("verified", mimetype="application/binary")
+            status = pickle.dumps("not verified")
+        return HttpResponse(status, mimetype="application/binary")
     
     #Store data in folders based on company name 
     

@@ -91,12 +91,13 @@ log(server)
 
 
 uname = os.uname()
-OS = uname[1]
+OS = uname[0]
 
 def open_req(req):
     if OS=="Darwin":
         file('delme.html', "wb").write(req.text.encode('utf-8'))
         os.system("open delme.html")
+        debug()
     return
 
 def chunks(fileObj):
@@ -454,6 +455,7 @@ class UploadWindow(tk.Frame):
         
     
     def upload(self):
+        global errors
         self.set_buttons_to_upload()
         #Remove files that aren't checked.
         uploadFiles = [ fn for fn in self.files if self.files[fn]["upload"].get() ]
@@ -485,45 +487,49 @@ class UploadWindow(tk.Frame):
                 else:
                     chunkMD5 = hashlib.md5(chunk).hexdigest()
                     if resume:
-                        manifestMD5sum = thisMeta.get('chunkManifest')[count]
-                        if chunkMD5 == manifestMD5sum:
-                            skip = "Skipping chunk {0} of file {1}. Checksum verified. ".format(count, fn)
-                            self.status.set(skip)
-                            log(skip)
+                        try:
+                            manifestMD5sum = thisMeta.get('chunkManifest')[count]
+                            if chunkMD5 == manifestMD5sum:
+                                skip = "Skipping chunk {0} of file {1}. Checksum verified. ".format(count, fn)
+                                self.status.set(skip)
+                                log(skip)
+                                count += 1
+                                self.files[fn]['pb']['value'] = (float(count) / nChunks) * 100
+                                self.root.update()
+                                self.pauseB.update()
+                                self.rowQuit.update()
+                                continue
+                        except KeyError:
+                            #There is no chunk, continue
+                            pass
+
+                    data['chunk'] = chunk
+                    data["chunkMD5"] = chunkMD5
+                    #with Catch(self):
+                        #if this fails, the Catch will re-enable
+                        #Quit button
+
+                    data['count'] = count
+                    req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=False)
+                    try:
+                        result = pickle.loads(req.text)
+                        if result['status'] == True:
                             count += 1
                             self.files[fn]['pb']['value'] = (float(count) / nChunks) * 100
+                            #Success of chunk upload and write
                             self.root.update()
                             self.pauseB.update()
                             self.rowQuit.update()
-                            continue
-                    else:
-                        data['chunk'] = chunk
-                        data["chunkMD5"] = chunkMD5
-                        #with Catch(self):
-                            #if this fails, the Catch will re-enable
-                            #Quit button
-
-                        data['count'] = count
-                        req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=False)
-                        try:
-                            result = pickle.loads(req.text)
-                            if result['status'] == True:
-                                count += 1
-                                self.files[fn]['pb']['value'] = (float(count) / nChunks) * 100
-                                #Success of chunk upload and write
-                                self.root.update()
-                                self.pauseB.update()
-                                self.filerow.update()
-                                self.rowQuit.update()
-                            else:
-                                log(result['status'])
-                                self.status.set(result['status'])
-                                self.update()
-                                self.rowQuit.update()
-                        except:
-                            open_req(req)
-                            errors += req.text + "\n\n" 
-                            open_req(req)                       
+                        else:
+                            log(result['status'])
+                            self.status.set(result['status'])
+                            self.update()
+                            self.rowQuit.update()
+                    except Exception as e:
+                        debug()
+                        open_req(req)
+                        errors += req.text + "\n\n" 
+                        open_req(req)                       
 
 
 
@@ -541,7 +547,13 @@ class UploadWindow(tk.Frame):
             eegFile.seek(0)
             data["fullMD5"] = fullMD5
             req = requests.post(uploadURL, files={"data":pickle.dumps(data)})
-            if req.text == 'verified':
+
+            try:
+                result = pickle.loads(req.text)
+            except:
+                result="not verified"
+                open_req(req)
+            if result == 'verified':
                 self.files[fn]["serverstatus"].set("upload verified")
                 meta['files'][fn]['serverstatus'] = "upload verified"
                 log("Verified upload of  {0}".format(eegFile.name))
@@ -553,27 +565,32 @@ class UploadWindow(tk.Frame):
             log(req.text)
 
 
-        self.quitB['text'] = "Quit"
-        self.uploadB['state'] = "disabled"
+
+        
         #Upload the errors text thing.
-        del data['fullMD5']
+        try:
+            del data['fullMD5']
+        except:
+            pass
+        self.clear_buttons_from_upload()
+        self.uploadB['state'] = "disabled"
+        self.status.set("")
+        self.root.update()
+        debug()
         data["errors"] =  errors
         req = requests.post(uploadURL, files={"data":pickle.dumps(data)})
+        try:
+            result = pickle.loads(req.text)
+            if result != "errors written":
+                log.log(req.text)
+                self.status.set("Error writting error log to server.")
+                self.update()
+        except:
+            open_req(req)
         if len(errors) > 0:
             tkMessageBox.showwarning("ALERT", errors)
-        self.status.set("All files uploaded. Press Quit to exit.")
-        self.uploadB['command'] = self.quit
-        #archiveFolder = "uploaded-{0}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H_%M"))
-        #try:
-        #    os.mkdir(archiveFolder)
-        #    log("Setting archive folder to {0}.".format(archiveFolder))
-        #except OSError:
-        #    pass
-        #for fn in self.fileList:
-        #    log("Archiving {0}.".format(fn))
-        #    os.rename(fn, os.path.join(archiveFolder, fn))
-        #self.status.set("All files uploaded and archived to {0}. Press Quit to exit.".format(archiveFolder))
-        self.root.update()
+        self.status.set("Upload finished. Press Quit to exit.")
+        
         
 
 ################################################################################
