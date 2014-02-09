@@ -626,7 +626,6 @@ class UploadWindow(tk.Frame):
             errorMsg = "No errors reported."
         else:
             errorMsg = errors
-            
         data["errors"] =  errorMsg
         req = requests.post(uploadURL, files={"data":pickle.dumps(data)})
         try:

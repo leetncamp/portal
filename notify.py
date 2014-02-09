@@ -7,7 +7,7 @@ import os
 
 hostname = os.uname()[1]
 if "upload" in hostname:
-    notifcation_emails = ["lee@snl.salk.edu", "dhowe@neurovigil.com"]
+    notification_emails = ["lee@snl.salk.edu", "dhowe@neurovigil.com"]
 else:
     #Development server
     notification_emails = ['lee@snl.salk.edu'] 
