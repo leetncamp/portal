@@ -107,14 +107,17 @@ except:
     sslVerify = True
 log("SSL Certification Verification: {0}".format(sslVerify))
     
-if OS == "Windows" and not pemFile:
+if OS == "Windows":
     
     """Windows stores it's CA-Bundle in the registry where python can't get to
     it We have to supply our own and it's not found. SSL verify will fail. Turn
     it off."""
     
-    sslVerify = False
-    startupErrors = "SSL Server Verification disabled due to missing PEM file"
+    if pemFile:
+        sslVerify = pemFile
+    else:
+        sslVerify = False
+        startupErrors = "SSL Server Verification disabled due to missing PEM file. Press Quit"
     log(startupErrors)
     
 sitionRE = re.compile(r"(\+\d+\+\d+)")
@@ -313,8 +316,10 @@ class UploadWindow(tk.Frame):
         global startupErrors
         if startupErrors:
             self.status.set(startupErrors)
+            self.uploadB['status'] = "disabled"
             sys.exit(self.mainloop())
-            
+        
+          
 
         """Send the meta to the server. If company name is missing, there isn't
         any point in trying to check the upload status. In that case, we'll
