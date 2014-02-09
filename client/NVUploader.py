@@ -16,6 +16,7 @@ except:
     OS = 'Windows'
 
 from pdb import set_trace as debug
+debug()
 if OS == "Windows":
     import subprocess as sp
     #psutil doesn't necessarily have permission in Windows 7. Use tasklist.
@@ -94,9 +95,6 @@ log("========================")
 log(now())
 log(cwd)
 log(server)
-
-
-
 
 
 def open_req(req):
