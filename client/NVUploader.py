@@ -286,7 +286,8 @@ class UploadWindow(tk.Frame):
         """Send the meta to the server. If company name is missing, there isn't
         any point in trying to check the upload status. In that case, we'll
         check after the upload button is pushed."""
-        debug()
+        
+        
         if self.company.get():
 
             self.status.set("Checking with server for resume information. May take a minute...")
@@ -657,7 +658,7 @@ class UploadWindow(tk.Frame):
         self.quit()        
 
 if __name__ == "__main__":
-    
+    debug()
     """Read in any metadata stored in metadata.pickle. If none exists, return
     the default meta dictionary"""
         
