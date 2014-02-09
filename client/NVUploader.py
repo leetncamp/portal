@@ -82,8 +82,9 @@ cwd = os.path.dirname(os.path.abspath(sys.argv[0]))
 cwd = cwd.split("NVU")[0]
 os.chdir(cwd)
 
+
 try:
-    sslVerify = "False" in open("sslVerify.txt", "r").read()
+    sslVerify = not "False" in open("sslVerify.txt", "r").read()
 except:
     sslVerify = True
 
