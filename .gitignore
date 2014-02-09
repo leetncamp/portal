@@ -3,6 +3,5 @@ binary
 uploads
 *.pyc
 .*
-email.txt
 upload.neurovigil.db
 Uploaded-EEG.txt

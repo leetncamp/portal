@@ -10,4 +10,4 @@ if "upload" in hostname:
     notifcation_emails = ["lee@snl.salk.edu", "dhowe@neurovigil.com"]
 else:
     #Development server
-    notification_emails = ['lee@snl.salk.edu']
+    notification_emails = ['lee@snl.salk.edu'] 
