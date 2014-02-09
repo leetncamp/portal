@@ -316,7 +316,7 @@ class UploadWindow(tk.Frame):
         global startupErrors
         if startupErrors:
             self.status.set(startupErrors)
-            self.uploadB['status'] = "disabled"
+            self.uploadB['state'] = "disabled"
             sys.exit(self.mainloop())
         
           
