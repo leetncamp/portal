@@ -97,7 +97,6 @@ def open_req(req):
     if OS=="Darwin":
         file('delme.html', "wb").write(req.text.encode('utf-8'))
         os.system("open delme.html")
-        debug()
     return
 
 def chunks(fileObj):
@@ -169,7 +168,7 @@ defaultmeta = {
         "VERSION": VERSION,
         "localtimezone": localtimezoneStr,
     },
-    "files" : {},
+    "files" : OrderedDict(),
 }
 
 def updateMeta(fileName):
@@ -278,7 +277,7 @@ class UploadWindow(tk.Frame):
         self.outsidePad.pack()
         self.rowStatus.pack(fill=tk.X, side=tk.BOTTOM)
         self.pack()
-        self.update()
+        self.update()    
         
         """Send the meta to the server. If company name is missing, there isn't
         any point in trying to check the upload status. In that case, we'll
@@ -286,47 +285,52 @@ class UploadWindow(tk.Frame):
     
         if self.company.get():
 
-            self.status.set("Checking with server for resume information. May take awhile...")
+            self.status.set("Checking with server for resume information. May take a minute...")
             #Gray out the Upload button while we check with the server.
             self.uploadB['state'] = 'disabled'
             self.quitB['state'] = 'disabled'
             self.update()
+            self.check_status()
+    
+    def check_status(self):
+        global meta
+        try:
+            req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)})
+            self.uploadB['state'] = 'active'
+            self.quitB['state'] = 'active'
             try:
-                req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)})
-                self.uploadB['state'] = 'active'
-                self.quitB['state'] = 'active'
-                try:
-                    #Replace the meta returned from the server with this one.
-                    meta    = pickle.loads(req.text.encode("utf-8"))
-                    message = meta.get('message', "")
-                    status  = meta.get('status', "")
-                    
-                    self.status.set("Updating files with information from server...")
-                    for fn in self.files:
-                        metafile = meta['files'].get(fn, {})
-                        serverstatus = metafile.get("serverstatus")
-                        self.files[fn]['serverstatus'].set(serverstatus)
-                        if serverstatus == "uploaded":
-                            self.files[fn]['upload'].set(0)
-                    self.status.set("Ready")
-                except Exception as e:
-                    open_req(req)
-                    log(req.text)
-                    self.status.set("unexpected result from server {0}".format(server))
+                #Replace the meta returned from the server with this one.
+                meta    = pickle.loads(req.text.encode("utf-8"))
+                message = meta.get('message', "")
+                status  = meta.get('status', "")
+                
+                self.status.set("Updating files with information from server...")
+                for fn in self.files:
+                    metafile = meta['files'].get(fn, {})
+                    serverstatus = metafile.get("serverstatus")
+                    self.files[fn]['serverstatus'].set(serverstatus)
+                    if serverstatus == "uploaded":
+                        self.files[fn]['upload'].set(0)
+                self.status.set("Ready")
             except Exception as e:
-                if "Connection refused" in str(e):
-                    message = "Could not connect to the server {0}".format(server)
-                    log(message)
-                    self.status.set("SERVER CONNECTION REFUSED!!")
-                else:
-                    self.status.set(str(e))
-        
-        
+                open_req(req)
+                log(req.text)
+                self.status.set("unexpected result from server {0}".format(server))
+        except Exception as e:
+            if "Connection refused" in str(e):
+                message = "Could not connect to the server {0}".format(server)
+                log(message)
+                self.status.set("SERVER CONNECTION REFUSED!!")
+            else:
+                self.status.set(str(e))
+    
 
         
     def set_paused(self):
         
         self.paused = not self.paused
+        self.check_status()
+        self.status.set("Saving resume information...this could take a minute")
         self.root.update()
         return
         
@@ -458,6 +462,7 @@ class UploadWindow(tk.Frame):
         global errors
         self.set_buttons_to_upload()
         #Remove files that aren't checked.
+        self.updateMetaFromForm()
         uploadFiles = [ fn for fn in self.files if self.files[fn]["upload"].get() ]
         for fn in uploadFiles:
             thisMeta = meta["files"][fn]
@@ -526,7 +531,6 @@ class UploadWindow(tk.Frame):
                             self.update()
                             self.rowQuit.update()
                     except Exception as e:
-                        debug()
                         open_req(req)
                         errors += req.text + "\n\n" 
                         open_req(req)                       
@@ -562,7 +566,7 @@ class UploadWindow(tk.Frame):
                 self.status.set("Verification of {0} failed!".format(eegFile.name))
                 #self.quitButton['text'] = "Quit"
                 #self.goButton['text'] = "Done"
-            log(req.text)
+                log(req.text)
 
 
 
@@ -576,8 +580,11 @@ class UploadWindow(tk.Frame):
         self.uploadB['state'] = "disabled"
         self.status.set("")
         self.root.update()
-        debug()
-        data["errors"] =  errors
+        if len(errors) == 0:
+            errorMsg = "No errors reported."
+        else:
+            errorMsg = errors
+        data["errors"] =  errorMsg
         req = requests.post(uploadURL, files={"data":pickle.dumps(data)})
         try:
             result = pickle.loads(req.text)
@@ -628,6 +635,7 @@ if __name__ == "__main__":
     In other words, sync from filesystem to meta"""
     
     fileList = [x for x in os.listdir(cwd) if re.match(globRE, x) ]
+    fileList = sorted(fileList, reverse=True)
     for fileName in fileList:
         updateMeta(fileName)
 

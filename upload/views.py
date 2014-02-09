@@ -411,9 +411,9 @@ def bUpload(request):
     if errors:
         errorpath = os.path.join(working_folder, "errors.txt")
         try:
-            file(errorpath, "rb").write(errors)
+            file(errorpath, "wb").write(errors)
             status = pickle.dumps("errors written")
-        except:
+        except Exception as e:
             status = pickle.dumps("failed to write errors")
         return HttpResponse(status, mimetype="application/binary")
     
@@ -428,17 +428,18 @@ def bUpload(request):
         
         """The data dict contains info about all files. Remove unneeded
         information and flatten the structure"""
-        
+
         metapath = filepath + ".metadata.pickle"
         #Make a copy of the original to prevent self reference as I flatten.
         thisFilesMeta = copy.deepcopy(meta['files'][data['file']])
-        thisFilesData = copy.deepcopy(data)
-        del thisFilesData['meta']
-        thisFilesMeta.update(thisFilesData)
-        pickle.dump(thisFilesMeta, file(metapath, 'wb'))
+        del meta['files']
+        meta.update(thisFilesMeta)
+        print meta
+        pickle.dump(meta, file(metapath, 'wb'))
         #Remove from memory.
-        del thisFilesData
         del thisFilesMeta
+        
+        
         
         """This is a request to verify the fullmd5 on an existing upload."""
         
@@ -464,7 +465,7 @@ def bUpload(request):
                 os.remove(filepath)
             except OSError:
                 pass
-    
+
         chunk = data['chunk']
         chunkMD5 = data['chunkMD5']
         md5sum = hashlib.md5(chunk).hexdigest()
@@ -551,13 +552,12 @@ def checkstatus(request, version=None):
                         f.seek(0)
                         fullMD5 = hashlib.md5(f.read()).hexdigest()
                         f.seek(0)
-                        try:
-                            for chunk in chunks(f):
-                                chunkManifest[count] = hashlib.md5(chunk).hexdigest()
-                                count += 1
-                            thisFile['chunkManifest'] = chunkManifest
-                        except Exception as e:
-                            debug()
+
+                        for chunk in chunks(f):
+                            chunkManifest[count] = hashlib.md5(chunk).hexdigest()
+                            count += 1
+                        thisFile['chunkManifest'] = chunkManifest
+
                     except IOError:
                         pass
                 
