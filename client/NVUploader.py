@@ -46,6 +46,7 @@ import traceback as tb
 from dateutil.tz import gettz, tzlocal
 import pytz
 lajolla = pytz.timezone("America/Los_Angeles")
+import platform
 
 localtimezoneStr = datetime.datetime.now(tzlocal()).tzname()
 
@@ -90,7 +91,7 @@ log(cwd)
 log(server)
 
 
-uname = os.uname()
+uname = platform.uname()
 OS = uname[0]
 
 def open_req(req):
