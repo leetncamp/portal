@@ -4,14 +4,19 @@ from collections import OrderedDict
 VERSION = 0.9
 
 
-import platform
 import os
 import sys
 import re
 nvRE = re.compile("NVUploader", re.I)
 
+try:
+    OS = os.uname()[0]
+except:
+    #os.uname doesn't work in Windows.
+    OS = 'Windows'
+
 from pdb import set_trace as debug
-if platform.uname()[0] == "Windows":
+if OS == "Windows":
     import subprocess as sp
     #psutil doesn't necessarily have permission in Windows 7. Use tasklist.
     tasklist = sp.check_output("tasklist")
@@ -91,8 +96,8 @@ log(cwd)
 log(server)
 
 
-uname = platform.uname()
-OS = uname[0]
+
+
 
 def open_req(req):
     if OS=="Darwin":
