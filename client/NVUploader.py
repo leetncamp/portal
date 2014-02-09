@@ -416,7 +416,7 @@ class UploadWindow(tk.Frame):
             thisFile['nameL'].configure(font=self.font)
             thisFile['nameL'].grid(row = self.filerow, column=0, sticky=tk.W, padx=10)
             """The file's datestamp is in La Jolla time. Convert it to iBrain's local time"""
-            localstamp                 = info['ctime'].replace(tzinfo=lajolla).astimezone(tzlocal())
+            localstamp                 = info['mtime'].replace(tzinfo=lajolla).astimezone(tzlocal())
             thisFile['dateL']          = tk.Label(self.filegroup, text=localstamp.strftime("%b %d, %Y %I:%M %p"))
             thisFile['dateL'].grid(row = self.filerow, column=1, sticky=tk.W, padx=10)
             thisFile['size']           = tk.Label(self.filegroup)
