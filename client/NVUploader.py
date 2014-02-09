@@ -658,7 +658,7 @@ class UploadWindow(tk.Frame):
         self.quit()        
 
 if __name__ == "__main__":
-    debug()
+
     """Read in any metadata stored in metadata.pickle. If none exists, return
     the default meta dictionary"""
         
