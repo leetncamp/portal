@@ -233,7 +233,7 @@ class UploadWindow(tk.Frame):
         #Patient ID
 
         self.pidCheck    = tk.IntVar()
-        self.pidCheck.set(meta['uploadInfo'].get("multiple", 0))
+        self.pidCheck.set(meta['uploadInfo'].get("multiplePatients", 0))
         self.pidCheckbox = tk.Checkbutton(self.top, text="Uploading data for multiple patients", variable=self.pidCheck, command=self.checkbox)
         self.pidCheckbox.grid(row=1, column=1, sticky=tk.W)
         self.patientID   = tk.StringVar()
@@ -278,7 +278,7 @@ class UploadWindow(tk.Frame):
         self.rowStatus.pack(fill=tk.X, side=tk.BOTTOM)
         self.pack()
         self.update()    
-        
+
         """Send the meta to the server. If company name is missing, there isn't
         any point in trying to check the upload status. In that case, we'll
         check after the upload button is pushed."""
@@ -291,6 +291,10 @@ class UploadWindow(tk.Frame):
             self.quitB['state'] = 'disabled'
             self.update()
             self.check_status()
+            self.status_check_needed = False
+        else:
+            self.status.set("Ready")
+            self.status_check_needed = True
     
     def check_status(self):
         global meta
@@ -339,11 +343,11 @@ class UploadWindow(tk.Frame):
         
         """transfer data from the tkinter form widgets into the meta dictionary"""
         
-        meta['uploadInfo']['multiple'] = self.pidCheck.get()
+        meta['uploadInfo']['multiplePatients'] = self.pidCheck.get()
         meta['uploadInfo']['clinician'] = self.clinician.get()
         meta['uploadInfo']['company'] = self.company.get()
         meta['uploadInfo']['patientID'] = self.patientID.get()
-        if not meta['uploadInfo']['multiple']:
+        if not meta['uploadInfo']['multiplePatients']:
             meta['uploadInfo']['patientID'] = self.patientID.get()
         for fn in self.files:
             meta['files'][fn]['patientID'] = self.files[fn]["patientID"].get()
@@ -385,7 +389,7 @@ class UploadWindow(tk.Frame):
             else:
                 thisFile['patientIDE'].grid(row=self.filerow, column=3, sticky=tk.W, padx=10)
             thisFile['notes'] = tk.StringVar()
-            thisFile['notes'].set( meta['files'][fn]['notes'])
+            thisFile['notes'].set( meta['files'][fn].get('notes', ""))
             thisFile['notesL'] = tk.Entry(self.filegroup, textvariable = thisFile['notes'], width=25)
             thisFile['notesL'].grid(row=self.filerow, column=4, padx=10)
             thisFile['upload'] = tk.IntVar()
@@ -401,7 +405,13 @@ class UploadWindow(tk.Frame):
             thisFile['pb'].grid(row=self.filerow, column=7, padx=10)
             self.files[fn] = thisFile
             self.filerow += 1
-            
+    
+            self.root.protocol("WM_DELETE_WINDOW", self.window_close)
+
+    def window_close(self):
+        if tkMessageBox.askokcancel("Quit?", "Are you sure you want to quit?"):
+            self.set_paused()
+            self.quit()        
 
     def goSinglePatient(self):
         
@@ -422,7 +432,8 @@ class UploadWindow(tk.Frame):
     def goMultiplePatient(self):
         
         """In multiplepatient mode, each file's patientID's entry widget has
-        it's own storage variable"""
+        it's own storage variable. Actually this is always the case, but the 
+        linkage changes."""
         
         self.patientIDL.grid_forget()
         self.patientIDE.grid_forget()
@@ -460,9 +471,31 @@ class UploadWindow(tk.Frame):
     
     def upload(self):
         global errors
+        if self.company.get() == "" or self.clinician.get() == "":
+            tkMessageBox.showwarning("Required information is missing", "Company and Clinician are required")
+            return
+            
+        if self.status_check_needed:
+            self.check_status()
         self.set_buttons_to_upload()
         #Remove files that aren't checked.
         self.updateMetaFromForm()
+
+        if meta['uploadInfo']['multiplePatients'] == 1:
+            #Check to make sure there is a patientID per file.
+            patientIDsOK = True
+            for fn in meta['files']:
+                if meta['files'][fn]['patientID'] == "":
+                    patientIDsOK = False
+                    break
+            if not patientIDsOK:
+                tkMessageBox.showwarning("Required information is missing", "When uploading data for multiple patients, each file must have a patientID")
+        else:
+            if meta['uploadInfo']['patientID'] == "":
+                tkMessageBox.showwarning("Required information is missing", "A patient ID is required")
+            
+                
+        
         uploadFiles = [ fn for fn in self.files if self.files[fn]["upload"].get() ]
         for fn in uploadFiles:
             thisMeta = meta["files"][fn]
