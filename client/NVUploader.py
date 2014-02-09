@@ -56,12 +56,6 @@ import platform
 
 localtimezoneStr = datetime.datetime.now(tzlocal()).tzname()
 
-try:
-    from sslVerify import sslVerify
-except:
-    sslVerify = True
-
-
 
 chunkSize = 1000000
 def now():
@@ -87,6 +81,12 @@ cwd = os.path.dirname(os.path.abspath(sys.argv[0]))
 #If the executable is bundled, we might have to go trim the path
 cwd = cwd.split("NVU")[0]
 os.chdir(cwd)
+
+try:
+    sslVerify = "False" in open("sslVerify.txt", "r").read()
+except:
+    sslVerify = True
+
 
 logfile = file("upload.log", 'a')
 
