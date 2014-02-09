@@ -56,6 +56,13 @@ import platform
 
 localtimezoneStr = datetime.datetime.now(tzlocal()).tzname()
 
+try:
+    from sslVerify import sslVerify
+except:
+    sslVerify = True
+
+
+
 chunkSize = 1000000
 def now():
     return(datetime.datetime.now().replace(tzinfo=tzlocal()))
@@ -83,9 +90,6 @@ os.chdir(cwd)
 
 logfile = file("upload.log", 'a')
 
-positionRE = re.compile(r"(\+\d+\+\d+)")
-sizeRE = re.compile(r"(\d+x\d*)")
-
 def log(txt):
     logfile.write("{0} : {1}\n".format(now(), txt))
     logfile.flush()
@@ -95,6 +99,11 @@ log("========================")
 log(now())
 log(cwd)
 log(server)
+log("SSL Certification Verification: {0}".format(sslVerify))
+
+positionRE = re.compile(r"(\+\d+\+\d+)")
+sizeRE = re.compile(r"(\d+x\d*)")
+
 
 
 def open_req(req):
@@ -304,7 +313,7 @@ class UploadWindow(tk.Frame):
     def check_status(self):
         global meta
         try:
-            req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)})
+            req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)}, verify=sslVerify)
             self.uploadB['state'] = 'active'
             self.quitB['state'] = 'active'
             try:
@@ -562,7 +571,7 @@ class UploadWindow(tk.Frame):
                         #Quit button
 
                     data['count'] = count
-                    req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=False)
+                    req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=sslVerify)
                     try:
                         result = pickle.loads(req.text)
                         if result['status'] == True:
@@ -597,7 +606,7 @@ class UploadWindow(tk.Frame):
             fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
             eegFile.seek(0)
             data["fullMD5"] = fullMD5
-            req = requests.post(uploadURL, files={"data":pickle.dumps(data)})
+            req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=sslVerify)
 
             try:
                 result = pickle.loads(req.text)
@@ -632,7 +641,7 @@ class UploadWindow(tk.Frame):
         else:
             errorMsg = errors
         data["errors"] =  errorMsg
-        req = requests.post(uploadURL, files={"data":pickle.dumps(data)})
+        req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=sslVerify)
         try:
             result = pickle.loads(req.text)
             if result != "errors written":
