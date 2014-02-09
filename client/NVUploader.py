@@ -16,7 +16,7 @@ except:
     OS = 'Windows'
 
 from pdb import set_trace as debug
-debug()
+
 if OS == "Windows":
     import subprocess as sp
     #psutil doesn't necessarily have permission in Windows 7. Use tasklist.
@@ -216,7 +216,7 @@ class UploadWindow(tk.Frame):
         #Company name and clinician name
         self.files      = OrderedDict()
         self.filerow    = 1
-        self.top       = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Upload Information", padx=5, pady=5)
+        self.top        = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Upload Information", padx=5, pady=5)
         self.clinician  = tk.StringVar()
         self.clinician.set(meta['uploadInfo'].get('clinician', ""))
         self.clinicianL = tk.Label(self.top, text="Clinician Name")
@@ -286,7 +286,7 @@ class UploadWindow(tk.Frame):
         """Send the meta to the server. If company name is missing, there isn't
         any point in trying to check the upload status. In that case, we'll
         check after the upload button is pushed."""
-    
+        debug()
         if self.company.get():
 
             self.status.set("Checking with server for resume information. May take a minute...")
