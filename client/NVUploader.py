@@ -146,11 +146,9 @@ class Catch():
     def __exit__(self, type, value, traceback):
         if type != None:
             global errors
-            self.instance.quitButton['text'] = "Quit"
-            log("Caught exception. Enabling the Quit and Upload buttons.")
-            self.clear_buttons_from_upload()
-            self.paused = False
-            self.instance.status.set("Problem uploading. You may press Upload again to retry.")
+            log("Caught HTTP exception.")
+            self.instance.clear_buttons_from_upload()
+            self.instance.status.set("HTTP connection problem. You may press Upload again to retry.")
             log(type)
             errors += str(type) + "\n"
             log(value)
@@ -600,8 +598,8 @@ class UploadWindow(tk.Frame):
                         #Quit button
 
                     data['count'] = count
-                    with Catch as #here
-                    req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=sslVerify)
+                    with Catch(self):
+                        req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=sslVerify)
                     try:
                         result = pickle.loads(req.text)
                         if result['status'] == True:
