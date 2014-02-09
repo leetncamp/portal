@@ -283,7 +283,7 @@ class UploadWindow(tk.Frame):
         self.rowStatus = tk.Frame(self.root)
         self.status = tk.StringVar()
         self.status.set("Checking for resume information for partially uploaded files. May take a minute...")
-        self.statusL = tk.Label(self.rowStatus, bd=1, relief=tk.SUNKEN, anchor=tk.W, padx=10, textvariable=self.status)
+        self.statusL = tk.Label(self.rowStatus, bd=1, relief=tk.SUNKEN, anchor=tk.W, padx=10, textvariable=self.status, bg="#ddd")
         self.statusL.pack(fill=tk.X, padx=0, pady=2)
         
         #Display the all the widgets
