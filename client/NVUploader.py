@@ -76,18 +76,17 @@ checkstatus = "{0}/checkstatus/{1}".format(server, VERSION)
 globRE = re.compile("eeg", re.I)
 errors =  ""
 
+#Try to get the neurovigil PEM file
+if os.path.isfile('nv.pem'):
+    pemFile = os.path.abspath('nv.pem')
+else:
+    pemFile = ""
+
 #Set the current working directory to that of the executable.
 cwd = os.path.dirname(os.path.abspath(sys.argv[0]))
 #If the executable is bundled, we might have to go trim the path
 cwd = cwd.split("NVU")[0]
 os.chdir(cwd)
-
-
-try:
-    sslVerify = not "False" in open("sslVerify.txt", "r").read()
-except:
-    sslVerify = True
-
 
 logfile = file("upload.log", 'a')
 
@@ -100,9 +99,25 @@ log("========================")
 log(now())
 log(cwd)
 log(server)
-log("SSL Certification Verification: {0}".format(sslVerify))
 
-positionRE = re.compile(r"(\+\d+\+\d+)")
+startupErrors = ""
+try:
+    sslVerify = not "False" in open("sslVerify.txt", "r").read()
+except:
+    sslVerify = True
+log("SSL Certification Verification: {0}".format(sslVerify))
+    
+if OS == "Windows" and not pemFile:
+    
+    """Windows stores it's CA-Bundle in the registry where python can't get to
+    it We have to supply our own and it's not found. SSL verify will fail. Turn
+    it off."""
+    
+    sslVerify = False
+    startupErrors = "SSL Server Verification disabled due to missing PEM file"
+    log(startupErrors)
+    
+sitionRE = re.compile(r"(\+\d+\+\d+)")
 sizeRE = re.compile(r"(\d+x\d*)")
 
 
@@ -292,6 +307,14 @@ class UploadWindow(tk.Frame):
         self.rowStatus.pack(fill=tk.X, side=tk.BOTTOM)
         self.pack()
         self.update()    
+        
+        """If there were startup errors, display them, them stop."""
+        
+        global startupErrors
+        if startupErrors:
+            self.status.set(startupErrors)
+            sys.exit(self.mainloop())
+            
 
         """Send the meta to the server. If company name is missing, there isn't
         any point in trying to check the upload status. In that case, we'll
