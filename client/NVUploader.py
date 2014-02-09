@@ -56,6 +56,7 @@ import platform
 
 localtimezoneStr = datetime.datetime.now(tzlocal()).tzname()
 
+
 chunkSize = 1000000
 def now():
     return(datetime.datetime.now().replace(tzinfo=tzlocal()))
@@ -81,10 +82,14 @@ cwd = os.path.dirname(os.path.abspath(sys.argv[0]))
 cwd = cwd.split("NVU")[0]
 os.chdir(cwd)
 
-logfile = file("upload.log", 'a')
 
-positionRE = re.compile(r"(\+\d+\+\d+)")
-sizeRE = re.compile(r"(\d+x\d*)")
+try:
+    sslVerify = not "False" in open("sslVerify.txt", "r").read()
+except:
+    sslVerify = True
+
+
+logfile = file("upload.log", 'a')
 
 def log(txt):
     logfile.write("{0} : {1}\n".format(now(), txt))
@@ -95,6 +100,11 @@ log("========================")
 log(now())
 log(cwd)
 log(server)
+log("SSL Certification Verification: {0}".format(sslVerify))
+
+positionRE = re.compile(r"(\+\d+\+\d+)")
+sizeRE = re.compile(r"(\d+x\d*)")
+
 
 
 def open_req(req):
@@ -210,13 +220,13 @@ class UploadWindow(tk.Frame):
         global meta
         self.root = root
         self.pause = False
-        tk.Frame.__init__(self, root, *args, bg="#ffffff", padx=10, pady=10,  **kwargs)
+        tk.Frame.__init__(self, root, *args, padx=10, pady=10,  **kwargs)
         self.root.title("Neurovigil EEG Uploader")
         self.outsidePad = tk.Frame(self.root, padx=10, pady=10)
         #Company name and clinician name
         self.files      = OrderedDict()
         self.filerow    = 1
-        self.top        = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Upload Information", padx=5, pady=5)
+        self.top        = tk.LabelFrame(self.outsidePad, text="Upload Information", padx=5, pady=5)
         self.clinician  = tk.StringVar()
         self.clinician.set(meta['uploadInfo'].get('clinician', ""))
         self.clinicianL = tk.Label(self.top, text="Clinician Name")
@@ -252,14 +262,14 @@ class UploadWindow(tk.Frame):
         self.top.pack()
         
         #File list
-        self.filegroup = tk.LabelFrame(self.outsidePad, bg="#ffffff", text="Files", padx=10, pady=10)
+        self.filegroup = tk.LabelFrame(self.outsidePad, text="Files", padx=10, pady=10)
         self.headings = ["File", "Date", "Size MB", "PatientID", "Notes", "Upload", "Server Status", "Upload Progress"]
         self.drawHeadings()
         self.drawFiles()
         self.filegroup.pack(expand=1)
 
         #Quit/Upload
-        self.rowQuit  = tk.Frame(self.outsidePad, bg="#ffffff")
+        self.rowQuit  = tk.Frame(self.outsidePad)
         self.uploadB = tk.Button(self.rowQuit, text="Upload", command=self.upload)
         self.uploadB.grid(row=0, column=0, sticky=tk.W)
         self.quitB = tk.Button(self.rowQuit, text="Quit", command=self.exit)
@@ -273,7 +283,7 @@ class UploadWindow(tk.Frame):
         self.rowStatus = tk.Frame(self.root)
         self.status = tk.StringVar()
         self.status.set("Checking for resume information for partially uploaded files. May take a minute...")
-        self.statusL = tk.Label(self.rowStatus, bd=1, relief=tk.SUNKEN, anchor=tk.W, bg="#ddd", padx=10, textvariable=self.status)
+        self.statusL = tk.Label(self.rowStatus, bd=1, relief=tk.SUNKEN, anchor=tk.W, padx=10, textvariable=self.status)
         self.statusL.pack(fill=tk.X, padx=0, pady=2)
         
         #Display the all the widgets
@@ -304,7 +314,7 @@ class UploadWindow(tk.Frame):
     def check_status(self):
         global meta
         try:
-            req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)})
+            req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)}, verify=sslVerify)
             self.uploadB['state'] = 'active'
             self.quitB['state'] = 'active'
             try:
@@ -562,7 +572,7 @@ class UploadWindow(tk.Frame):
                         #Quit button
 
                     data['count'] = count
-                    req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=False)
+                    req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=sslVerify)
                     try:
                         result = pickle.loads(req.text)
                         if result['status'] == True:
@@ -597,7 +607,7 @@ class UploadWindow(tk.Frame):
             fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
             eegFile.seek(0)
             data["fullMD5"] = fullMD5
-            req = requests.post(uploadURL, files={"data":pickle.dumps(data)})
+            req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=sslVerify)
 
             try:
                 result = pickle.loads(req.text)
@@ -632,7 +642,7 @@ class UploadWindow(tk.Frame):
         else:
             errorMsg = errors
         data["errors"] =  errorMsg
-        req = requests.post(uploadURL, files={"data":pickle.dumps(data)})
+        req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=sslVerify)
         try:
             result = pickle.loads(req.text)
             if result != "errors written":
