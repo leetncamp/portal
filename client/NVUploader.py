@@ -156,6 +156,7 @@ class Catch():
             log(tb.format_exc(traceback))
             errors += str(value) + "\n"
 
+        
 """This is a prototype of the data structure that holds metadata about the
 upload and about each file. Showing the structure of the file metadata just for
 reference.
@@ -682,7 +683,7 @@ class UploadWindow(tk.Frame):
             tkMessageBox.showwarning("ALERT", errors)
             self.status.set("Upload finished. Press Quit to exit.")
         else:
-            self.status.set("{0}. Press Quit to exit.".format(errors))
+            self.status.set("{0} Press Quit to exit.".format(errors))
         
         
 
