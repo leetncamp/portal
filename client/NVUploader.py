@@ -340,7 +340,8 @@ class UploadWindow(tk.Frame):
     def check_status(self):
         global meta
         try:
-            req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)}, verify=sslVerify)
+            with Catch(self):
+                req = requests.post(checkstatus, files={"meta":pickle.dumps(meta)}, verify=sslVerify)
             self.uploadB['state'] = 'active'
             self.quitB['state'] = 'active'
             try:
@@ -634,7 +635,9 @@ class UploadWindow(tk.Frame):
             fullMD5 = hashlib.md5(eegFile.read()).hexdigest()
             eegFile.seek(0)
             data["fullMD5"] = fullMD5
-            req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=sslVerify)
+            
+            with Catch(self):
+                req = requests.post(uploadURL, files={"data":pickle.dumps(data)}, verify=sslVerify)
 
             try:
                 result = pickle.loads(req.text)
@@ -646,15 +649,12 @@ class UploadWindow(tk.Frame):
                 meta['files'][fn]['serverstatus'] = "upload verified"
                 log("Verified upload of  {0}".format(eegFile.name))
             else:
-                log("Verification of {0} failed!".format(eegFile.name))
-                self.status.set("Verification of {0} failed!".format(eegFile.name))
-                #self.quitButton['text'] = "Quit"
-                #self.goButton['text'] = "Done"
+                verificationError = ("Verification of {0} failed!".format(eegFile.name))
+                log(verificationError)
+                self.status.set(verificationError)
+                errors += verificationError
                 log(req.text)
 
-
-
-        
         #Upload the errors text thing.
         try:
             del data['fullMD5']
@@ -680,7 +680,9 @@ class UploadWindow(tk.Frame):
             open_req(req)
         if len(errors) > 0:
             tkMessageBox.showwarning("ALERT", errors)
-        self.status.set("Upload finished. Press Quit to exit.")
+            self.status.set("Upload finished. Press Quit to exit.")
+        else:
+            self.status.set("{0}. Press Quit to exit.".format(errors))
         
         
 
