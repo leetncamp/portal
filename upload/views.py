@@ -81,35 +81,20 @@ def Upload(request):
     print("Starting upload")
     """
     
-    ## View for browser-based file uploads ##
+    ## View for browser-based file uploads using jquery-fileuploader ##
 
     It does the following actions:
         - displays a template if no action have been specified
         - upload a file into unique temporary directory
                 unique directory for an upload session
                     meaning when user opens up an upload page, all upload actions
-                    while being on that page will be uploaded to unique directory.
+                    from that page will be uploaded to unique directory.
                     as soon as user reloads their browser, files will be uploaded 
                     to a different unique directory
         - delete an uploaded file
-
-    ## How Single View Multi-functions ##
-
-    If the user just goes to a the upload url (e.g. '/upload/'), the request.method will be "GET"
-        Or you can think of it as request.method will NOT be "POST"
-    Therefore the view will always return the upload template
-
-    If on the other hand the method is POST, that means some sort of upload action
-    has to be done. That could be either uploading a file or deleting a file
-
-    For deleting files, there is the same url (e.g. '/upload/'), except it has an
-    extra query parameter. Meaning the url will have '?' in it.
-    In this implementation the query will simply be '?f=filename_of_the_file_to_be_removed'
-
-    If the request has no query parameters, file is being uploaded.
-
     """
-
+    
+    """This doesn't work in IE"""
     if "MSIE" in request.META.get("HTTP_USER_AGENT"):
         return(render_to_response("internetexplorer.html", context_instance=RequestContext(request)))
     
@@ -154,11 +139,9 @@ def Upload(request):
 
 
     # POST request
-    #   meaning user has triggered an upload action
+    #  user has triggered an upload action
 
     if request.method == 'POST':
-
-        print("Starting POST")
         # figure out the path where files will be uploaded to
         # PROJECT_DIR is from the settings file
         temp_path = os.path.join(project_dir, "uploads", request.session._get_or_create_session_key())
@@ -193,7 +176,6 @@ def Upload(request):
             #if ufile.content_type not in options["acceptedformats"]:
             #    error = "acceptFileTypes"
 
-            print("Response data")
             # the response data which will be returned to the uploader as json
             response_data = {
                 "name": ufile.name,
