@@ -17,7 +17,11 @@ from django.contrib.auth import authenticate, login, logout
 
 
 def login_user(request):
-    if "MSIE" in request.META.get("HTTP_USER_AGENT"):
+    try:
+        if "MSIE" in request.META.get("HTTP_USER_AGENT"):
+            return(render_to_response("internetexplorer.html", context_instance=RequestContext(request)))
+    except Exception as e:
+        print traceback.format_exc()
         return(render_to_response("internetexplorer.html", context_instance=RequestContext(request)))
     state = "Please log in below..."
     username = password = ''
