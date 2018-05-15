@@ -78,6 +78,13 @@ clientNameRE = re.compile("domain\ name\ pointer\s(.*)\.")
 
 @login_required(login_url='/login_user')
 def Upload(request):
+
+    browser = request.META.get("HTTP_USER_AGENT", "").lower()
+    if re.search("trident|msie", browser):
+        incompatibleBrowser = "<h2>INCOMPATIBLE BROWSER, Try MS Edge, Firefox, Chrome or Opera</h2>"
+    else:
+        incompatibleBrowser = ""
+
     print("Starting upload")
     """
     
@@ -345,7 +352,6 @@ def Upload(request):
     else: #GET
 
         # load the template
-
         t = loader.get_template("upload.html")
         c = Context({
             #The manuscript
@@ -359,6 +365,7 @@ def Upload(request):
             # some of the parameters to be checked by javascript
             "maxfilesize": options["maxfilesize"],
             "minfilesize": options["minfilesize"],
+            "incompatibleBrowser": incompatibleBrowser,
             })
         # add csrf token value to the dictionary
         c.update(csrf(request))

@@ -137,8 +137,12 @@ var UpdateFreeSpace = window.setInterval(getFreeSpace, 4000);
 	        <table class="files"></table>
 	        <div class="fileupload-progressbar"></div>
 	    </div>
+        {{incompatibleBrowser|safe}}
+        {% if not incompatibleBrowser %}
         <h2>Drag and drop your files on this page to upload them to NeuroVigil.</h2>
         <h2>Free Space: <span id="FreeSpace">{{ freeSpace.uploadFree }}</span> GB</h2>
+        {% endif %}
+
 <script id="template-upload" type="text/x-jquery-tmpl">
     <tr class="template-upload{{ open_tv }}if error{{ close_tv }} ui-state-error{{ open_tv }}/if{{ close_tv }}">
         <td class="preview"></td>
