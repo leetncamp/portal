@@ -95,7 +95,7 @@ def Upload(request):
     """
     
     """This doesn't work in IE"""
-    if "MSIE" in request.META.get("HTTP_USER_AGENT"):
+    if "MSIE" in request.META.get("HTTP_USER_AGENT", u""):
         return(render_to_response("internetexplorer.html", context_instance=RequestContext(request)))
     
     freeSpace = getFreeSpace()
